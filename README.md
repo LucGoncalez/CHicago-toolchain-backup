@@ -30,3 +30,12 @@ Go to the chir folder and type:
 	make
 
 Now you should have the executable of the tool inside of the build folder.
+
+## Building the CHicago Assembler
+
+For building the CHicago Assembler, you only need GCC.
+Go to the chasm folder and type:
+
+        make
+
+Now you should have the executable of the tool inside of the build folder.
