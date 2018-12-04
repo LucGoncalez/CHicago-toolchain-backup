@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 14:38 BRT
-// Last edited on December 03 of 2018, at 20:07 BRT
+// Last edited on December 04 of 2018, at 12:06 BRT
 
 #include <arch.h>
 #include <stdio.h>
@@ -314,7 +314,7 @@ token_t *lexer_lex(lexer_t *lexer) {
 			for (int i = 0; i < len + 1; i++) {																	// Consume len bytes and the string end character (")
 				lexer_consume(lexer);
 			}
-		} else if (lexer->text[lexer->pos] == '\n' || lexer->text[lexer->pos] == ':') {							// New line or colon?
+		} else if (lexer->text[lexer->pos] == '\n' || lexer->text[lexer->pos] == ':') {							// Single character token?
 			cur = lexer_new_token(list, cur);																	// Yes, create a new token at the end of the list
 			
 			if (cur == NULL) {

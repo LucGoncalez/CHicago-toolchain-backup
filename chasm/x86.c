@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 17:37 BRT
-// Last edited on December 02 of 2018, at 20:10 BRT
+// Last edited on December 04 of 2018, at 12:12 BRT
 
 #include <arch.h>
 #include <stdlib.h>
@@ -59,14 +59,20 @@ static int x86_find_register(char *name) {
 static token_t *x86_lex(lexer_t *lexer, token_t *list, token_t *cur) {
 	if (lexer == NULL || list == NULL) {																		// Null pointer checks
 		return NULL;
-	} else if (lexer->text[lexer->pos] == ',') {																// Comma?
+	} else if (lexer->text[lexer->pos] == ',' || lexer->text[lexer->pos] == '+' ||
+			   lexer->text[lexer->pos] == '-' || lexer->text[lexer->pos] == '*' ||
+			   lexer->text[lexer->pos] == '[' || lexer->text[lexer->pos] == ']') {								// Single character token?
 		cur = lexer_new_token(list, cur);																		// Yes, create a new token at the end of the list
 		
 		if (cur == NULL) {
 			return NULL;																						// Failed...
 		}
 		
-		cur->type = TOK_TYPE_COMMA;																				// Set the type
+		cur->type = lexer->text[lexer->pos] == ',' ? TOK_TYPE_COMMA :
+					(lexer->text[lexer->pos] == '+' ? TOK_TYPE_ADD :
+					(lexer->text[lexer->pos] == '-' ? TOK_TYPE_SUB :
+					(lexer->text[lexer->pos] == '*' ? TOK_TYPE_MUL :
+					(lexer->text[lexer->pos] == '[' ? TOK_TYPE_OBRAC : TOK_TYPE_CBRAC))));						// Set the type
 		cur->filename = lexer->filename;																		// Set the filename
 		cur->line = lexer->line;																				// Set the line
 		cur->col = lexer->col;																					// And the column
@@ -98,6 +104,16 @@ static void x86_tprint(token_t *token) {
 		return;
 	} else if (token->type == TOK_TYPE_COMMA) {																	// Comma?
 		printf("Comma\n");																						// Yes, print it
+	} else if (token->type == TOK_TYPE_ADD) {																	// Add?
+		printf("Add\n");																						// Yes, print it
+	} else if (token->type == TOK_TYPE_SUB) {																	// Subtract?
+		printf("Subtract\n");																					// Yes, print it
+	} else if (token->type == TOK_TYPE_MUL) {																	// Multiply?
+		printf("Multiply\n");																					// Yes, print it
+	} else if (token->type == TOK_TYPE_OBRAC) {																	// Opening Bracket?
+		printf("Opening Bracket\n");																			// Yes, print it
+	} else if (token->type == TOK_TYPE_CBRAC) {																	// Closing Bracket?
+		printf("Closing Bracket\n");																			// Yes, print it
 	} else if (token->type == TOK_TYPE_REGISTER) {																// Register?
 		printf("Register: %s\n", token->value);																	// Yes, print it
 	}
