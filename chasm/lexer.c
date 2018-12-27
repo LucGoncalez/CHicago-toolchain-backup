@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 14:38 BRT
-// Last edited on December 04 of 2018, at 12:06 BRT
+// Last edited on December 27 of 2018, at 15:12 BRT
 
 #include <arch.h>
 #include <stdio.h>
@@ -225,7 +225,8 @@ token_t *lexer_lex(lexer_t *lexer) {
 			for (int i = 0; i < len; i++) {																		// Consume len bytes
 				lexer_consume(lexer);
 			}
-		} else if (lexer_is_dec(lexer->text[lexer->pos])) {														// Number?
+		} else if (lexer_is_dec(lexer->text[lexer->pos]) ||
+				   lexer->text[lexer->pos] == '-' || lexer->text[lexer->pos] == '+') {							// Number?
 			cur = lexer_new_token(list, cur);																	// Yes, create a new token at the end of the list
 			
 			if (cur == NULL) {
@@ -240,6 +241,10 @@ token_t *lexer_lex(lexer_t *lexer) {
 			
 			int len = 0;																						// Let's get the length of the number!
 			
+			if (lexer->text[lexer->pos] == '-' || lexer->text[lexer->pos] == '+') {								// Force negative/positive number sign?
+				len++;																							// Yes, consume it
+			}
+			
 			if ((lexer->pos + 1 < lexer->length) && lexer->text[lexer->pos] == '0' &&
 				lexer->text[lexer->pos + 1] == 'b') {															// Binary number
 				len += 2;																						// Jump the 0b prefix
@@ -247,16 +252,13 @@ token_t *lexer_lex(lexer_t *lexer) {
 				for (; lexer->pos + len < lexer->length && lexer_is_bin(lexer->text[lexer->pos + len]);
 					   len++) ;
 			} else if ((lexer->pos + 1 < lexer->length) && lexer->text[lexer->pos] == '0' &&
-					   lexer->text[lexer->pos + 1] == 'o') {													// Octal number
-				len += 2;																						// Jump the 0o prefix
-				
-				for (; lexer->pos + len < lexer->length && lexer_is_oct(lexer->text[lexer->pos + len]);
-					   len++) ;
-			} else if ((lexer->pos + 1 < lexer->length) && lexer->text[lexer->pos] == '0' &&
 					   lexer->text[lexer->pos + 1] == 'x') {													// Hexadecimal number
 				len += 2;																						// Jump the 0x prefix
 				
 				for (; lexer->pos + len < lexer->length && lexer_is_hex(lexer->text[lexer->pos + len]);
+					   len++) ;
+			} else if ((lexer->pos + 1 < lexer->length) && lexer->text[lexer->pos] == '0') {					// Octal number
+				for (; lexer->pos + len < lexer->length && lexer_is_oct(lexer->text[lexer->pos + len]);
 					   len++) ;
 			} else {																							// Decimal number
 				for (; lexer->pos + len < lexer->length && lexer_is_dec(lexer->text[lexer->pos + len]);
@@ -331,7 +333,6 @@ token_t *lexer_lex(lexer_t *lexer) {
 		} else if ((cur = arch_lex(lexer, list, cur)) == NULL) {												// Arch-specific?
 			printf("%s: %d: %d: unrecognized character\n", lexer->filename, lexer->line, lexer->col);			// Nope...
 			token_free_list(list);
-			exit(1);
 			return NULL;
 		}
 		

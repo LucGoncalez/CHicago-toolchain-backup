@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 10:46 BRT
-// Last edited on December 02 of 2018, at 19:48 BRT
+// Last edited on December 27 of 2018, at 13:00 BRT
 
 #include <arch.h>
 #include <stdio.h>
@@ -100,15 +100,27 @@ int main(int argc, char **argv) {
 	}
 	
 	token_t *toks = lexer_lex(lexer);																	// Lex!
-	token_t *cur = toks;
 	
-	while (cur != NULL) {																				// Print all the tokens!
-		token_print(cur);
-		cur = cur->next;
+	if (toks == NULL) {
+		return 1;																						// Failed to lex...
 	}
 	
-	token_free_list(toks);																				// Free the token list
-	lexer_free(lexer);																					// And the lexer struct
+	parser_t *parser = parser_new(toks);																// Create the parser
+	
+	if (parser == NULL) {
+		token_free_list(toks);																			// Failed...
+		return 1;
+	}
+	
+	node_t *ast = parser_parse(parser);																	// Parse!
+	
+	if (ast == NULL) {
+		return 1;																						// Failed to parse
+	}
+	
+	node_free_list(ast);																				// Free the ast
+	parser_free(parser);																				// Free the parser struct
+	lexer_free(lexer);																					// Free the lexer struct
 	
 	return 0;
 }
