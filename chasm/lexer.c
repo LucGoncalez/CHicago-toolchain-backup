@@ -1,12 +1,13 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 14:38 BRT
-// Last edited on December 27 of 2018, at 15:12 BRT
+// Last edited on December 28 of 2018, at 11:46 BRT
 
 #include <arch.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 static char *directives[7] = {
 	"section",
@@ -135,7 +136,8 @@ static int lexer_is_alnum(char c) {
 static void lexer_consume_whitespaces(lexer_t *lexer) {
 	while (lexer->pos < lexer->length && (lexer->text[lexer->pos] == ' ' ||
 										  lexer->text[lexer->pos] == '\t' ||
-										  lexer->text[lexer->pos] == '\r')) {									// Whitespace = Space, Tab or Carriage Return
+										  lexer->text[lexer->pos] == '\r' ||
+										  lexer->text[lexer->pos] <= 1)) {										// Whitespace = Space, Tab, Carriage Return (the <= 1 is because of a bug)
 		lexer_consume(lexer);
 	}
 }
@@ -158,7 +160,7 @@ static token_t *lexer_new_token(token_t *list, token_t *cur) {
 
 static int lexer_find_directive(char *name) {
 	for (int i = 0; i < 7; i++) {
-		if ((strlen(directives[i]) == strlen(name)) && !strcmp(directives[i], name)) {							// Found?
+		if ((strlen(directives[i]) == strlen(name)) && !strcasecmp(directives[i], name)) {						// Found?
 			return 1;																							// Yes :)
 		}
 	}
@@ -182,10 +184,11 @@ token_t *lexer_lex(lexer_t *lexer) {
 	lexer->col = 0;																								// The column to 0
 	lexer->pos = 0;																								// And the position to 0
 	
-	lexer_consume_whitespaces(lexer);																			// Consume any whitespaces at the start
-	
 	while (lexer->pos < lexer->length) {																		// Let's go!
-		if (lexer->text[lexer->pos] == ';') {																	// Comment?
+		if (lexer->text[lexer->pos] == ' ' || lexer->text[lexer->pos] == '\t' ||
+			lexer->text[lexer->pos] == '\r' || lexer->text[lexer->pos] <= 1) {									// Consume any whitespaces
+			lexer_consume_whitespaces(lexer);
+		} else if (lexer->text[lexer->pos] == ';') {															// Comment?
 			while (lexer->pos < lexer->length && lexer->text[lexer->pos] != '\n') {								// Yes, consume until we find the next line!
 				lexer->pos++;
 			}
@@ -240,24 +243,27 @@ token_t *lexer_lex(lexer_t *lexer) {
 			cur->col = lexer->col;																				// And the column
 			
 			int len = 0;																						// Let's get the length of the number!
+			int sign = -1;
 			
 			if (lexer->text[lexer->pos] == '-' || lexer->text[lexer->pos] == '+') {								// Force negative/positive number sign?
-				len++;																							// Yes, consume it
+				sign = lexer->pos++;																			// Yes
 			}
 			
-			if ((lexer->pos + 1 < lexer->length) && lexer->text[lexer->pos] == '0' &&
-				lexer->text[lexer->pos + 1] == 'b') {															// Binary number
+			lexer_consume_whitespaces(lexer);																	// Consume the whitespaces
+			
+			if ((lexer->pos + len + 1 < lexer->length) && lexer->text[lexer->pos + len] == '0' &&
+				lexer->text[lexer->pos + len + 1] == 'b') {														// Binary number
 				len += 2;																						// Jump the 0b prefix
 				
 				for (; lexer->pos + len < lexer->length && lexer_is_bin(lexer->text[lexer->pos + len]);
 					   len++) ;
-			} else if ((lexer->pos + 1 < lexer->length) && lexer->text[lexer->pos] == '0' &&
-					   lexer->text[lexer->pos + 1] == 'x') {													// Hexadecimal number
+			} else if ((lexer->pos + len + 1 < lexer->length) && lexer->text[lexer->pos + len] == '0' &&
+					   lexer->text[lexer->pos + len + 1] == 'x') {												// Hexadecimal number
 				len += 2;																						// Jump the 0x prefix
 				
 				for (; lexer->pos + len < lexer->length && lexer_is_hex(lexer->text[lexer->pos + len]);
 					   len++) ;
-			} else if ((lexer->pos + 1 < lexer->length) && lexer->text[lexer->pos] == '0') {					// Octal number
+			} else if ((lexer->pos + len + 1 < lexer->length) && lexer->text[lexer->pos + len] == '0') {		// Octal number
 				for (; lexer->pos + len < lexer->length && lexer_is_oct(lexer->text[lexer->pos + len]);
 					   len++) ;
 			} else {																							// Decimal number
@@ -272,7 +278,13 @@ token_t *lexer_lex(lexer_t *lexer) {
 				return NULL;
 			}
 			
-			strncpy(cur->value, &lexer->text[lexer->pos], len);													// Copy it!
+			if (sign != -1) {																					// We have the sign?
+				cur->value[0] = lexer->text[sign];																// Yes
+				strncpy(cur->value + 1, &lexer->text[lexer->pos], len);
+			} else {
+				strncpy(cur->value, &lexer->text[lexer->pos], len);												// Nope!
+			}
+			
 			cur->value[len] = '\0';																				// Add the NUL terminator at the end
 			
 			for (int i = 0; i < len; i++) {																		// Consume len bytes
@@ -335,8 +347,6 @@ token_t *lexer_lex(lexer_t *lexer) {
 			token_free_list(list);
 			return NULL;
 		}
-		
-		lexer_consume_whitespaces(lexer);																		// Consume whitespaces
 	}
 	
 	return list;

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 27 of 2018, at 11:42 BRT
-// Last edited on December 28 of 2018, at 10:01 BRT
+// Last edited on December 28 of 2018, at 10:59 BRT
 
 #include <arch.h>
 #include <errno.h>
@@ -200,7 +200,7 @@ node_t *parser_parse_number(parser_t *parser, node_t *cur) {
 	
 	if (tok == NULL) {
 		return NULL;																						// Failed...
-	} if (tok->value[0] == '0' && tok->value[1] == 'b') {													// Binary?
+	} else if (tok->value[0] == '0' && tok->value[1] == 'b') {												// Binary?
 		val = strtoumax(tok->value + 2, &endptr, 2);														// Yes, convert using base = 2
 	} else {
 		val = strtoumax(tok->value, &endptr, 0);															// Use auto-detection (base = 0)

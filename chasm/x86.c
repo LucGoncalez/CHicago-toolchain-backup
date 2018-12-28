@@ -1,9 +1,10 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 17:37 BRT
-// Last edited on December 28 of 2018, at 10:04 BRT
+// Last edited on December 28 of 2018, at 11:41 BRT
 
 #include <arch.h>
+#include <inttypes.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -84,17 +85,16 @@ static int x86_find_register(char *name) {
 static token_t *x86_lex(lexer_t *lexer, token_t *list, token_t *cur) {
 	if (lexer == NULL || list == NULL) {																				// Null pointer checks
 		return NULL;
-	} else if (lexer->text[lexer->pos] == ',' || lexer->text[lexer->pos] == '+' || lexer->text[lexer->pos] == '-' ||
-			   lexer->text[lexer->pos] == '*' || lexer->text[lexer->pos] == '[' || lexer->text[lexer->pos] == ']') {	// Single character token?
+	} else if (lexer->text[lexer->pos] == ',' || lexer->text[lexer->pos] == '*' || lexer->text[lexer->pos] == '[' ||
+			   lexer->text[lexer->pos] == ']') {																		// Single character token?
 		cur = lexer_new_token(list, cur);																				// Yes, create a new token at the end of the list
 		
 		if (cur == NULL) {
 			return NULL;																								// Failed...
 		}
 		
-		cur->type = lexer->text[lexer->pos] == ',' ? TOK_TYPE_COMMA : (lexer->text[lexer->pos] == '+' ? TOK_TYPE_ADD :
-					(lexer->text[lexer->pos] == '-' ? TOK_TYPE_SUB : (lexer->text[lexer->pos] == '*' ? TOK_TYPE_MUL :
-					(lexer->text[lexer->pos] == '[' ? TOK_TYPE_OBRAC : TOK_TYPE_CBRAC))));								// Set the type
+		cur->type = lexer->text[lexer->pos] == ',' ? TOK_TYPE_COMMA : (lexer->text[lexer->pos] == '*' ? TOK_TYPE_MUL :
+					(lexer->text[lexer->pos] == '[' ? TOK_TYPE_OBRAC : TOK_TYPE_CBRAC));								// Set the type
 		cur->filename = lexer->filename;																				// Set the filename
 		cur->line = lexer->line;																						// Set the line
 		cur->col = lexer->col;																							// And the column
@@ -140,6 +140,73 @@ static node_t *parser_parse_register(parser_t *parser, node_t *cur) {
 	return ret;
 }
 
+static node_t *parser_parse_address(parser_t *parser, node_t *cur) {
+	node_t *val = NULL;																									// Let's get the val
+	int have_disp = 0;
+	int have_mul = 0;
+	int32_t disp = 0;
+	uint32_t mul = 0;
+	
+	if (parser_check_noval(parser, TOK_TYPE_IDENTIFIER)) {																// Identifier?
+		val = parser_parse_identifier(parser, NULL);
+	} else if (parser_check_noval(parser, TOK_TYPE_NUMBER)) {															// Number?
+		val = parser_parse_number(parser, NULL);
+	} else if (parser_check_noval(parser, TOK_TYPE_REGISTER)) {															// Register?
+		val = parser_parse_register(parser, NULL);
+	} else {
+		return NULL;																									// ...
+	}
+	
+	if (parser_check_noval(parser, TOK_TYPE_NUMBER)) {																	// Displacement?
+		token_t *tok = parser_expect_noval(parser, TOK_TYPE_NUMBER);													// Yes, now we should have a number
+		char *endptr = NULL;
+		
+		if (tok == NULL) {
+			return NULL;																								// ...
+		} else if (tok->value[0] != '+' && tok->value[0] != '-') {														// It's really the displacement?
+			return NULL;																								// ...
+		} else if (tok->value[0] == '+') {																				// Displacement = Add?
+			disp = strtoimax(tok->value + 1, &endptr, 0);																// Yes
+		} else {
+			disp = strtoimax(tok->value, &endptr, 0);																	// Nope, we need to parse the '-'
+		}
+		
+		have_disp = 1;
+	}
+	
+	if (parser_accept_noval(parser, TOK_TYPE_MUL)) {																	// Multiply?
+		token_t *tok = parser_expect_noval(parser, TOK_TYPE_NUMBER);													// Yes, now we should have a number
+		char *endptr = NULL;
+		
+		if (tok == NULL) {
+			return NULL;																								// ...
+		} else if (tok->value[0] == '+' || tok->value[0] == '-') {														// It's really what we want?
+			return NULL;
+		} else if (tok->value[0] == '0' && tok->value[1] == 'b') {														// Binary?
+			mul = strtoumax(tok->value + 2, &endptr, 2);																// Yes, convert using base = 2
+		} else {
+			mul = strtoumax(tok->value, &endptr, 0);																	// Use auto-detection (base = 0)
+		}
+		
+		have_mul = 1;
+	}
+	
+	parser_expect_noval(parser, TOK_TYPE_CBRAC);																		// Expect the closing bracket
+	
+	node_t *ret = parser_new_node(cur, sizeof(address_node_t));															// Create the node
+	
+	if (ret != NULL) {																									// Failed?
+		ret->type = NODE_TYPE_ADDRESS;																					// No, so let's set the type
+		ret->childs = val;																								// The val
+		((address_node_t*)ret)->have_disp = have_disp;																	// And some informations about the displacement etc
+		((address_node_t*)ret)->have_mul = have_mul;
+		((address_node_t*)ret)->disp = disp;
+		((address_node_t*)ret)->mul = mul;
+	}
+	
+	return ret;
+}
+
 static int x86_find_mnemonic(char *name) {
 	for (int i = 0; mnemonics[i] != NULL; i++) {
 		if ((strlen(mnemonics[i]) == strlen(name)) && !strcasecmp(mnemonics[i], name)) {								// Found?
@@ -168,6 +235,8 @@ start:		if (parser_check_noval(parser, TOK_TYPE_IDENTIFIER)) {														// Y
 				args = parser_parse_number(parser, args);
 			} else if (parser_check_noval(parser, TOK_TYPE_REGISTER)) {													// Registers?
 				args = parser_parse_register(parser, args);
+			} else if (parser_accept_noval(parser, TOK_TYPE_OBRAC)) {													// Address
+				args = parser_parse_address(parser, args);
 			} else {
 				printf("%s: %d: %d: invalid argument\n", tok->filename, tok->line, tok->col);							// Invalid, return -1 (error)
 				
@@ -226,10 +295,6 @@ static void x86_tprint(token_t *token) {
 		return;
 	} else if (token->type == TOK_TYPE_COMMA) {																			// Comma?
 		printf("Comma\n");																								// Yes, print it
-	} else if (token->type == TOK_TYPE_ADD) {																			// Add?
-		printf("Add\n");																								// Yes, print it
-	} else if (token->type == TOK_TYPE_SUB) {																			// Subtract?
-		printf("Subtract\n");																							// Yes, print it
 	} else if (token->type == TOK_TYPE_MUL) {																			// Multiply?
 		printf("Multiply\n");																							// Yes, print it
 	} else if (token->type == TOK_TYPE_OBRAC) {																			// Opening Bracket?
