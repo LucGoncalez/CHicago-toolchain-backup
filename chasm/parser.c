@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 27 of 2018, at 11:42 BRT
-// Last edited on December 27 of 2018, at 16:01 BRT
+// Last edited on December 28 of 2018, at 10:01 BRT
 
 #include <arch.h>
 #include <errno.h>
@@ -14,7 +14,13 @@ void node_free_list(node_t *node) {
 	if (node != NULL) {																						// Null pointer check
 		while (node != NULL) {																				// Ok, let's free the list!
 			node_t *old = node;																				// Save the old one
+			
 			node = old->next;																				// Set the new one
+			
+			if (old->childs != NULL) {																		// Free the childs from this node?
+				node_free_list(old->childs);																// Yes
+			}
+			
 			node_free(old);																					// Free the old one
 		}
 	}
@@ -170,17 +176,24 @@ static node_t *parser_new_node(node_t *cur, size_t size) {
 	return cur->next;
 }
 
-node_t *parser_parse_identifier(parser_t *parser) {
+node_t *parser_parse_identifier(parser_t *parser, node_t *cur) {
 	token_t *tok = parser_expect_noval(parser, TOK_TYPE_IDENTIFIER);										// Get our token
 	
 	if (tok == NULL) {
 		return NULL;																						// Failed...
 	}
 	
-	return NULL;
+	node_t *ret = parser_new_node(cur, sizeof(identifier_node_t));											// Create the node
+	
+	if (ret != NULL) {																						// Failed?
+		ret->type = NODE_TYPE_IDENTIFIER;																	// No, so let's set the type
+		((identifier_node_t*)ret)->value = tok->value;														// And the value!
+	}
+	
+	return ret;
 }
 
-node_t *parser_parse_number(parser_t *parser) {
+node_t *parser_parse_number(parser_t *parser, node_t *cur) {
 	token_t *tok = parser_expect_noval(parser, TOK_TYPE_NUMBER);											// Get our token
 	char *endptr = NULL;
 	uintmax_t val = 0;
@@ -193,7 +206,7 @@ node_t *parser_parse_number(parser_t *parser) {
 		val = strtoumax(tok->value, &endptr, 0);															// Use auto-detection (base = 0)
 	}
 	
-	node_t *ret = parser_new_node(NULL, sizeof(number_node_t));												// Create the node
+	node_t *ret = parser_new_node(cur, sizeof(number_node_t));												// Create the node
 	
 	if (ret != NULL) {																						// Failed?
 		ret->type = NODE_TYPE_NUMBER;																		// No, so let's set the type
@@ -201,50 +214,6 @@ node_t *parser_parse_number(parser_t *parser) {
 	}
 	
 	return ret;
-}
-
-static void node_print(node_t *node) {
-	if (node == NULL) {
-		return;
-	}
-	
-	static int tabs = 0;
-	
-	if (node->type == NODE_TYPE_IDENTIFIER) {
-		for (int i = 0; i < tabs; i++) {
-			printf("\t");
-		}
-		
-		printf("Identifier: %s\n", ((identifier_node_t*)node)->value);
-	} else if (node->type == NODE_TYPE_NUMBER) {
-		for (int i = 0; i < tabs; i++) {
-			printf("\t");
-		}
-		
-		printf("Number: %lu\n", ((number_node_t*)node)->value);
-	} else if (node->type == NODE_TYPE_DEFINE_DIRECTIVE) {
-		for (int i = 0; i < tabs; i++) {
-			printf("\t");
-		}
-		
-		printf("Define Directive (size = %d)\n", ((define_directive_node_t*)node)->size);
-		
-		if (node->childs != NULL) {
-			tabs++;
-			node_print(node->childs);
-			tabs--;
-		}
-	} else if (node->type == NODE_TYPE_LABEL) {
-		for (int i = 0; i < tabs; i++) {
-			printf("\t");
-		}
-		
-		printf("Label: %s\n", ((label_node_t*)node)->name);
-	}
-	
-	if (node->next != NULL) {
-		node_print(node->next);
-	}
 }
 
 node_t *parser_parse(parser_t *parser) {
@@ -261,22 +230,48 @@ node_t *parser_parse(parser_t *parser) {
 	
 	while (parser->position != NULL) {																		// Let's parse!
 		token_t *tok = parser->position;
+		node_t *atmp = NULL;
 		int size = 0;
 		
-		if ((size = parser_accept_val(parser, TOK_TYPE_DIRECTIVE, "db") != NULL ? 1 : 0) == 1 ||
-		    (size = parser_accept_val(parser, TOK_TYPE_DIRECTIVE, "dw") != NULL ? 2 : 0) == 2 ||
-		    (size = parser_accept_val(parser, TOK_TYPE_DIRECTIVE, "dd") != NULL ? 4 : 0) == 4 ||
-		    (size = parser_accept_val(parser, TOK_TYPE_DIRECTIVE, "dq") != NULL ? 8 : 0) == 8) {			// Define byte/word/dword/quad directive?
+		if ((size = parser_accept_val(parser, TOK_TYPE_DIRECTIVE, "section") != NULL ? 1 : 0) == 1 ||
+		    (size = parser_accept_val(parser, TOK_TYPE_DIRECTIVE, "global") != NULL ? 2 : 0) == 2 ||
+		    (size = parser_accept_val(parser, TOK_TYPE_DIRECTIVE, "extern") != NULL ? 3 : 0) == 3) {		// Set current section/Make symbol global/Import extern symbol?
+			token_t *tmp = parser_expect_noval(parser, TOK_TYPE_IDENTIFIER);								// Yes, the next token MUST be the section/symbol name
+			
+			if (tmp == NULL) {
+				node_free_list(list);																		// ...
+				return NULL;
+			} else if (parser_expect_noval(parser, TOK_TYPE_EOS) == NULL) {									// Now, expect a EOS (new line)
+				node_free_list(list);																		// ...
+				return NULL;
+			}
+			
+			cur = parser_new_node(cur, sizeof(section_directive_node_t));									// Create the node
+			
+			if (cur == NULL) {
+				node_free_list(list);																		// Failed...
+				return NULL;
+			} else if (list == NULL) {
+				list = cur;
+			}
+			
+			cur->type = size == 1 ? NODE_TYPE_SECTION_DIRECTIVE : (size == 2 ? NODE_TYPE_GLOBAL_DIRECTIVE :	// Set the type
+						NODE_TYPE_EXTERN_DIRECTIVE);
+			((section_directive_node_t*)cur)->name = tmp->value;											// And the section/symbol name
+		} else if ((size = parser_accept_val(parser, TOK_TYPE_DIRECTIVE, "db") != NULL ? 1 : 0) == 1 ||		// Define byte/word/dword/quad directive?
+				   (size = parser_accept_val(parser, TOK_TYPE_DIRECTIVE, "dw") != NULL ? 2 : 0) == 2 ||
+				   (size = parser_accept_val(parser, TOK_TYPE_DIRECTIVE, "dd") != NULL ? 4 : 0) == 4 ||
+				   (size = parser_accept_val(parser, TOK_TYPE_DIRECTIVE, "dq") != NULL ? 8 : 0) == 8) {
 			node_t *val = NULL;																				// First, let's get the val!
 			
 			if (parser_check_noval(parser, TOK_TYPE_IDENTIFIER)) {											// With an identifier?
-				val = parser_parse_identifier(parser);
+				val = parser_parse_identifier(parser, NULL);
 			} else if (parser_check_noval(parser, TOK_TYPE_NUMBER)) {										// Number?
-				val = parser_parse_number(parser);
+				val = parser_parse_number(parser, NULL);
 			}
 			
 			if (val == NULL) {
-				printf("%s: %d: %d: invalid argument\r\n", tok->filename, tok->line, tok->col);				// Failed to get the val...
+				printf("%s: %d: %d: invalid argument\n", tok->filename, tok->line, tok->col);				// Failed to get the val...
 				node_free_list(list);
 				return NULL;
 			}
@@ -286,7 +281,12 @@ node_t *parser_parse(parser_t *parser) {
 			cur = parser_new_node(cur, sizeof(define_directive_node_t));									// Create the node
 			
 			if (cur == NULL) {
-				node_free_list(list);																		// Failed...
+				if (val != NULL) {																			// Failed...
+					node_free(val);
+				}
+				
+				node_free_list(list);
+				
 				return NULL;
 			} else if (list == NULL) {
 				list = cur;
@@ -295,6 +295,17 @@ node_t *parser_parse(parser_t *parser) {
 			cur->type = NODE_TYPE_DEFINE_DIRECTIVE;															// Set the type
 			cur->childs = val;																				// Set the argument
 			((define_directive_node_t*)cur)->size = size;													// And the size
+		} else if ((atmp = arch_parse(parser, cur)) != NULL) {												// Try to call arch_parse
+			if (atmp == (node_t*)-1) {																		// Error out and exit?
+				node_free_list(list);																		// Yes
+				return NULL;
+			}
+			
+			cur = atmp;																						// Ok!
+			
+			if (list == NULL) {
+				list = cur;
+			}
 		} else if (parser_check_noval(parser, TOK_TYPE_IDENTIFIER)) {										// Label?
 			char *name = parser_expect_noval(parser, TOK_TYPE_IDENTIFIER)->value;							// Yes, save the name
 			
@@ -322,8 +333,6 @@ node_t *parser_parse(parser_t *parser) {
 		
 		parser_consume_newlines(parser);																	// Consume all the EOS until the next directive/label/etc
 	}
-	
-	node_print(list);
 	
 	return list;
 }

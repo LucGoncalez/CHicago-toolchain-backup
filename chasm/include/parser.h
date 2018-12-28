@@ -1,17 +1,20 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 27 of 2018, at 11:43 BRT
-// Last edited on December 27 of 2018, at 15:51 BRT
+// Last edited on December 28 of 2018, at 09:51 BRT
 
 #ifndef __PARSER_H__
 #define __PARSER_H__
 
 #include <stdint.h>
 
-#define NODE_TYPE_IDENTIFIER 0x00
-#define NODE_TYPE_NUMBER 0x01
-#define NODE_TYPE_DEFINE_DIRECTIVE 0x02
-#define NODE_TYPE_LABEL 0x03
+#define NODE_TYPE_SECTION_DIRECTIVE 0x00
+#define NODE_TYPE_GLOBAL_DIRECTIVE 0x01
+#define NODE_TYPE_EXTERN_DIRECTIVE 0x02
+#define NODE_TYPE_DEFINE_DIRECTIVE 0x03
+#define NODE_TYPE_IDENTIFIER 0x04
+#define NODE_TYPE_NUMBER 0x05
+#define NODE_TYPE_LABEL 0x06
 
 typedef struct node_s {
 	uint8_t type;
@@ -22,13 +25,8 @@ typedef struct node_s {
 
 typedef struct {
 	node_t base;
-	char *value;
-} identifier_node_t;
-
-typedef struct {
-	node_t base;
-	uintmax_t value;
-} number_node_t;
+	char *name;
+} section_directive_node_t, global_directive_node_t, extern_directive_node_t, label_node_t;
 
 typedef struct {
 	node_t base;
@@ -37,8 +35,13 @@ typedef struct {
 
 typedef struct {
 	node_t base;
-	char *name;
-} label_node_t;
+	char *value;
+} identifier_node_t;
+
+typedef struct {
+	node_t base;
+	uintmax_t value;
+} number_node_t;
 
 typedef struct {
 	token_t *tokens;
@@ -56,6 +59,8 @@ token_t *parser_accept_noval(parser_t *parser, uint8_t type);
 token_t *parser_accept_val(parser_t *parser, uint8_t type, char *val);
 token_t *parser_expect_noval(parser_t *parser, uint8_t type);
 token_t *parser_expect_val(parser_t *parser, uint8_t type, char *val);
+node_t *parser_parse_identifier(parser_t *parser, node_t *cur);
+node_t *parser_parse_number(parser_t *parser, node_t *cur);
 node_t *parser_parse(parser_t *parser);
 
 #endif		// __PARSER_H__

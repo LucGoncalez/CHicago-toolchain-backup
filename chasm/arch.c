@@ -1,10 +1,11 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 14:40 BRT
-// Last edited on December 03 of 2018, at 20:08 BRT
+// Last edited on December 27 of 2018, at 20:23 BRT
 
 #include <arch.h>
 #include <lexer.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -25,7 +26,7 @@ static arch_t *arch_find(char *name) {
 	return NULL;
 }
 
-int arch_register(char *name, token_t *(*lex)(lexer_t*, token_t*, token_t*), uint8_t (*ttype)(char*), void (*tfree)(token_t*), void (*tprint)(token_t*)) {
+int arch_register(char *name, token_t *(*lex)(lexer_t*, token_t*, token_t*), node_t *(*parse)(parser_t*, node_t*), uint8_t (*ttype)(char*), void (*tfree)(token_t*), void (*tprint)(token_t*)) {
 	if (name == NULL || lex == NULL || ttype == NULL || tfree == NULL || tprint == NULL) {				// We have everything we need?
 		return 0;																						// No...
 	} else if (arch_list == NULL) {																		// First entry?
@@ -44,6 +45,7 @@ int arch_register(char *name, token_t *(*lex)(lexer_t*, token_t*, token_t*), uin
 		
 		arch_list->arch->name = name;																	// Fill the fields!
 		arch_list->arch->lex = lex;
+		arch_list->arch->parse = parse;
 		arch_list->arch->ttype = ttype;
 		arch_list->arch->tfree = tfree;
 		arch_list->arch->tprint = tprint;
@@ -74,6 +76,7 @@ int arch_register(char *name, token_t *(*lex)(lexer_t*, token_t*, token_t*), uin
 	
 	cur->next->arch->name = name;																		// Fill the fields!
 	cur->next->arch->lex = lex;
+	cur->next->arch->parse = parse;
 	cur->next->arch->ttype = ttype;
 	cur->next->arch->tfree = tfree;
 	cur->next->arch->tprint = tprint;
@@ -92,10 +95,26 @@ int arch_select(char *name) {
 	return 0;																							// :(
 }
 
+void arch_list_all() {
+	for (arch_list_t *cur = arch_list; cur != NULL; cur = cur->next) {									// Just print all the avaliable architectures
+		printf("%s%s", cur != arch_list ? ", " : "", cur->arch->name);
+	}
+	
+	printf("\n");
+}
+
 token_t *arch_lex(lexer_t *lexer, token_t *list, token_t *cur) {
 	if (arch_current != NULL && arch_current->lex != NULL && lexer != NULL && list != NULL &&
 	    cur != NULL) {																					// Check if the arguments are valid
 		return arch_current->lex(lexer, list, cur);														// And redirect
+	}
+	
+	return 0;
+}
+
+node_t *arch_parse(parser_t *parser, node_t *cur) {
+	if (arch_current != NULL && arch_current->parse != NULL && parser != NULL && cur != NULL) {			// Check if the arguments are valid
+		return arch_current->parse(parser, cur);														// And redirect
 	}
 	
 	return 0;
