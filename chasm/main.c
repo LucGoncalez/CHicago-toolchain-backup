@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 10:46 BRT
-// Last edited on December 27 of 2018, at 20:22 BRT
+// Last edited on December 28 of 2018, at 22:09 BRT
 
 #include <arch.h>
 #include <stdio.h>
@@ -96,30 +96,53 @@ int main(int argc, char **argv) {
 	lexer_t *lexer = lexer_new(input, code);															// Create the lexer
 	
 	if (lexer == NULL) {
-		free(code);																						// Failled...
+		printf("compilation failed\n");																	// Failed...
+		free(code);
 		return 1;
 	}
 	
 	token_t *toks = lexer_lex(lexer);																	// Lex!
 	
 	if (toks == NULL) {
-		return 1;																						// Failed to lex...
+		printf("compilation failed\n");																	// Failed to lex...
+		lexer_free(lexer);
+		return 1;
 	}
 	
 	parser_t *parser = parser_new(toks);																// Create the parser
 	
 	if (parser == NULL) {
-		token_free_list(toks);																			// Failed...
+		printf("compilation failed\n");																	// Failed...
+		parser_free(parser);
+		lexer_free(lexer);
 		return 1;
 	}
 	
 	node_t *ast = parser_parse(parser);																	// Parse!
 	
 	if (ast == NULL) {
-		return 1;																						// Failed to parse
+		printf("compilation failed\n");																	// Failed to parse...
+		parser_free(parser);
+		lexer_free(lexer);
+		return 1;
 	}
 	
-	node_free_list(ast);																				// Free the ast
+	codegen_t *codegen = codegen_new(ast);																// Create the code generator
+	
+	if (codegen == NULL) {
+		printf("compilation failed\n");																	// Failed...
+		parser_free(parser);
+		lexer_free(lexer);
+		return 1;
+	} else if (!codegen_gen(codegen)) {																	// Generate!
+		printf("compilation failed\n");																	// Failed to generate...
+		codegen_free(codegen);
+		parser_free(parser);
+		lexer_free(lexer);
+		return 1;
+	}
+	
+	codegen_free(codegen);																				// Free the codegen struct
 	parser_free(parser);																				// Free the parser struct
 	lexer_free(lexer);																					// Free the lexer struct
 	

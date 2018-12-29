@@ -1,13 +1,14 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 14:57 BRT
-// Last edited on December 27 of 2018, at 20:22 BRT
+// Last edited on December 28 of 2018, at 18:03 BRT
 
 #ifndef __ARCH_H__
 #define __ARCH_H__
 
 #include <lexer.h>
 #include <parser.h>
+#include <codegen.h>
 
 #define REGISTER_ARCH(name, namestr, lex, parse, ttype, tfree, tprint) static __attribute__((constructor)) void name ## _register(void) { arch_register(namestr, lex, parse, ttype, tfree, tprint); }
 

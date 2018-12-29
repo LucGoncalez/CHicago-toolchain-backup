@@ -1,12 +1,10 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 03 of 2018, at 19:52 BRT
-// Last edited on December 28 of 2018, at 10:59 BRT
+// Last edited on December 28 of 2018, at 17:17 BRT
 
 #ifndef __X86_H__
 #define __X86_H__
-
-#include <parser.h>
 
 #define TOK_TYPE_COMMA (TOK_TYPE_COLON + 0x01)
 #define TOK_TYPE_MUL (TOK_TYPE_COLON + 0x02)
@@ -17,6 +15,10 @@
 #define NODE_TYPE_ADDRESS (NODE_TYPE_LABEL + 0x01)
 #define NODE_TYPE_REGISTER (NODE_TYPE_LABEL + 0x02)
 #define NODE_TYPE_INSTRUCTION (NODE_TYPE_LABEL + 0x03)
+
+#define INSTR_TYPE_NONE 0x00
+
+#define INSTR_ARG_NONE 0x00
 
 typedef struct {
 	node_t base;

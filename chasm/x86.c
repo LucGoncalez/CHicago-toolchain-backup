@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 17:37 BRT
-// Last edited on December 28 of 2018, at 11:41 BRT
+// Last edited on December 28 of 2018, at 17:15 BRT
 
 #include <arch.h>
 #include <inttypes.h>
@@ -11,36 +11,27 @@
 #include <strings.h>
 #include <x86.h>
 
-static char *registers[] = {
+static char *registers[30] = {
 	"eax", "ebx", "ecx", "edx", "esi", "edi", "ebp", "esp",
 	"ax", "bx", "cx", "dx", "si", "di", "bp", "sp",
 	"ah", "bh", "ch", "dh",
 	"al", "bl", "cl", "dl",
-	"cs", "ds", "es", "fs", "gs", "ss",
-	NULL
+	"cs", "ds", "es", "fs", "gs", "ss"
 };
 
-static char *mnemonics[] = {
-	"aaa", "aad", "aam", "aas", "adc", "add", "and", "arpl", "bound", "bsf",
-	"bsr", "bt", "btc", "btr", "bts", "call", "cbw", "cwde", "clc", "cld",
-	"cli", "clts", "cmc", "cmp", "cmps", "cmpsb", "cmpsw", "cmpsd", "cwd",
-	"cdq", "daa", "das", "dec", "div", "enter", "hlt", "idiv", "imul", "in",
-	"inc", "ins", "insb", "insw", "insd", "int", "into", "iret", "iretd",
-	"jcc", "jmp", "lahf", "lar", "lea", "leave", "lgdt", "lidt", "lgs", "lss",
-	"lds", "les", "lfs", "lldt", "lmsw", "lock", "lods", "lodsb", "lodsw",
-	"lodsd", "loop", "loope", "loopz", "loopne", "loopnz", "lsl", "ltr",
-	"mov", "movs", "movsb", "movw", "movsd", "movsx", "movzx", "mul", "neg",
-	"nop", "not", "or", "out", "outs", "outsb", "outsw", "outsd", "pop",
-	"popa", "popf", "push", "pusha", "pushf", "rcl", "rcr", "rol", "ror",
-	"ret", "sahf", "sal", "sar", "shl", "shr", "sbb", "scas", "scasb",
-	"scasw", "scasd", "seta", "setae", "setb", "setbe", "setc", "sete",
-	"setg", "setge", "setl", "setle", "setna", "setnae", "setnb", "setnbe",
-	"setnc", "setne", "setng", "setngr", "setnl", "setnle", "setno", "setnp",
-	"setns", "setnz", "seto", "setp", "setpe", "setpo", "sets", "setz",
-	"sgdt", "sidt", "shld", "shrd", "sldt", "smsw", "stc", "std", "sti",
-	"stos", "stosb", "stosw", "stosw", "stosd", "str", "sub", "test", "verr",
-	"verw", "wait", "xchg", "xlat", "xlatb", "xor",
-	NULL
+static char *mnemonics[1] = {
+	"aaa"
+};
+
+struct {
+	char *name;
+	int opcode;
+	int optype;
+	int extension;
+	uint32_t arg1;
+	uint32_t arg2;
+} instructions[1] = {
+	{ "aaa", 0x37, INSTR_TYPE_NONE, 0x00, INSTR_ARG_NONE, INSTR_ARG_NONE }
 };
 
 static void lexer_consume(lexer_t *lexer) {
@@ -73,7 +64,7 @@ static token_t *lexer_new_token(token_t *list, token_t *cur) {
 }
 
 static int x86_find_register(char *name) {
-	for (int i = 0; registers[i] != NULL; i++) {
+	for (int i = 0; i < 30; i++) {
 		if ((strlen(registers[i]) == strlen(name)) && !strcasecmp(registers[i], name)) {								// Found?
 			return 1;																									// Yes :)
 		}
@@ -208,7 +199,7 @@ static node_t *parser_parse_address(parser_t *parser, node_t *cur) {
 }
 
 static int x86_find_mnemonic(char *name) {
-	for (int i = 0; mnemonics[i] != NULL; i++) {
+	for (int i = 0; i < 1; i++) {
 		if ((strlen(mnemonics[i]) == strlen(name)) && !strcasecmp(mnemonics[i], name)) {								// Found?
 			return 1;																									// Yes :)
 		}
