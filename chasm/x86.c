@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 17:37 BRT
-// Last edited on December 29 of 2018, at 23:35 BRT
+// Last edited on December 30 of 2018, at 15:18 BRT
 
 #include <arch.h>
 #include <inttypes.h>
@@ -19,93 +19,195 @@ static char *registers[30] = {
 	"cs", "ds", "es", "fs", "gs", "ss"
 };
 
-static char *mnemonics[43] = {
-	"aaa", "aad", "aam", "aas", "cbw", "cwde", "clc", "cld", "cli", "clts",
-	"cmc", "cwd", "cdq", "daa", "das", "hlt", "iret", "iretw", "iretd",
-	"lahf", "leave", "nop", "popa", "popaw", "popad", "popf", "popfw",
-	"popfd", "pusha", "pushaw", "pushad", "pushf", "pushfw", "pushfd",
-	"ret", "retf", "retfw", "retfd", "sahf", "stc", "std", "sti", "wait"
+static char *gregsb[8] = { "al", "cl", "dl", "bl", "ah", "ch", "dh", "bh" };
+static char *gregsw[8] = { "ax", "cx", "dx", "bx", "sp", "bp", "si", "di" };
+static char *gregsd[8] = { "eax", "ecx", "edx", "ebx", "esp", "ebp", "esi", "edi" };
+
+static char *mnemonics[91] = {
+	"aaa", "aad", "aam", "aas", "call", "cbw", "cwde", "clc", "cld", "cli",
+	"clts", "cmc", "cwd", "cdq", "daa", "das", "dec", "hlt", "int3", "int",
+	"into", "iret", "iretw", "iretd", "ja", "jae", "jb", "jbe", "jc", "jcxz",
+	"jecxz", "je", "jz", "jg", "jge", "jl", "jle", "jna", "jnae", "jnb",
+	"jnbe", "jnc", "jne", "jng", "jnge", "jnl", "jnle", "jno", "jnp", "jns",
+	"jnz", "jo", "jp", "jpe", "jpo", "js", "jz", "jmp", "lahf", "leave",
+	"loop", "loope", "loopz", "loopne", "loopnz", "nop", "pop", "popa",
+	"popaw", "popad", "popf", "popfw", "popfd", "push", "pusha", "pushaw",
+	"pushad", "pushf", "pushfw", "pushfd", "ret", "retf", "retfw", "retfd",
+	"sahf", "stc", "std", "sti", "wait", "xlatb", "xlat",
 };
 
 struct {
 	char *name;
 	int opcode;
 	int optype;
+	int alt_addr;
 	int extension;
 	uint32_t args;
 	uint32_t arg1;
 	uint32_t arg2;
-} instructions[43] = {
-	{ "aaa", 0x37, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+} instructions[127] = {
+	{ "aaa", 0x37, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "aad", 0x0AD5, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "aad", 0x0AD5, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "aam", 0x0AD4, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "aam", 0x0AD4, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "aas", 0x3F, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "aas", 0x3F, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "cbw", 0x9866, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "cwde", 0x98, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "call", 0xE8, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
 	
-	{ "clc", 0xF8, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "cbw", 0x98, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "cwde", 0x98, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "cld", 0xFC, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "clc", 0xF8, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "cli", 0xFA, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "cld", 0xFC, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "clts", 0x060F, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "cli", 0xFA, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "cmc", 0xF5, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "clts", 0x060F, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "cwd", 0x9966, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "cdq", 0x99, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "cmc", 0xF5, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "daa", 0x27, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "cwd", 0x99, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "cdq", 0x99, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "das", 0x2F, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "daa", 0x27, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "hlt", 0xF4, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "das", 0x2F, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "iret", 0xCF, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "iretw", 0xCF66, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "iretd", 0xCF, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "dec", 0x48, INSTR_TYPE_OPREGW, 1, -1, 1, INSTR_ARG_GREGW, INSTR_ARG_NONE },
+	{ "dec", 0x48, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_GREGD, INSTR_ARG_NONE },
 	
-	{ "lahf", 0x9F, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "hlt", 0xF4, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "leave", 0xC9, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "int3", 0xCC, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "int", 0xCD, INSTR_TYPE_BYTE, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "into", 0xCE, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "nop", 0x90, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "iret", 0xCF, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "iretw", 0xCF, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "iretd", 0xCF, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "popa", 0x61, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "popaw", 0x6166, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "popad", 0x61, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "ja", 0x77, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jae", 0x73, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jb", 0x72, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jbe", 0x76, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jc", 0x72, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jcxz", 0xE3, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jecxz", 0xE3, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "je", 0x74, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jz", 0x74, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jg", 0x7F, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jge", 0x7D, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jl", 0x7C, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jle", 0x7E, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jna", 0x76, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jnae", 0x72, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jnb", 0x73, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jnbe", 0x77, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jnc", 0x73, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jne", 0x75, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jng", 0x7E, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jnge", 0x7C, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jnl", 0x7D, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jnle", 0x7F, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jno", 0x71, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jnp", 0x7B, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jns", 0x79, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jnz", 0x75, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jo", 0x70, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jp", 0x7A, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jpe", 0x7A, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jpo", 0x7B, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "js", 0x78, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jz", 0x74, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "ja", 0x870F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jae", 0x830F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jb", 0x820F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jbe", 0x860F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jc", 0x820F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "je", 0x840F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jz", 0x840F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jg", 0x8F0F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jge", 0x8D0F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jl", 0x8C0F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jle", 0x8E0F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jna", 0x860F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jnae", 0x820F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jnb", 0x830F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jnbe", 0x870F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jnc", 0x830F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jne", 0x850F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jng", 0x8E0F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jnge", 0x8C0F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jnl", 0x8D0F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jnle", 0x8F0F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jno", 0x810F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jnp", 0x8B0F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jns", 0x890F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jnz", 0x850F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jo", 0x800F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jp", 0x8A0F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jpe", 0x8A0F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jpo", 0x8B0F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "js", 0x880F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jz", 0x840F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jmp", 0xE8, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jmp", 0xE9, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
 	
-	{ "popf", 0x9D, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "popfw", 0x9D66, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "popfd", 0x9D, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "lahf", 0x9F, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "pusha", 0x60, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "pushaw", 0x6066, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "pushad", 0x60, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "leave", 0xC9, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "pushf", 0x9C, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "pushfw", 0x9C66, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "pushfd", 0x9C, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "nop", 0x90, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "ret", 0xC3, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "retf", 0xCB, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "retfw", 0xCB66, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "retfd", 0xCB, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "loop", 0xE2, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "loope", 0xE1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "loopz", 0xE1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "loopne", 0xE0, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "loopnz", 0xE0, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
 	
-	{ "sahf", 0x9E, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "pop", 0x58, INSTR_TYPE_OPREGW, 1, -1, 1, INSTR_ARG_GREGW, INSTR_ARG_NONE },
+	{ "pop", 0x58, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_GREGD, INSTR_ARG_NONE },
 	
-	{ "stc", 0xF9, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "popa", 0x61, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "popaw", 0x61, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "popad", 0x61, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "std", 0xFD, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "popf", 0x9D, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "popfw", 0x9D, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "popfd", 0x9D, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "sti", 0xFB, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "push", 0x50, INSTR_TYPE_OPREGW, 1, -1, 1, INSTR_ARG_GREGW, INSTR_ARG_NONE },
+	{ "push", 0x50, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_GREGD, INSTR_ARG_NONE },
+	{ "push", 0x68, INSTR_TYPE_DWORD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
 	
-	{ "wait", 0x9B, INSTR_TYPE_NONE, 0, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "pusha", 0x60, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "pushaw", 0x60, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "pushad", 0x60, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "pushf", 0x9C, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "pushfw", 0x9C, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "pushfd", 0x9C, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "ret", 0xC3, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "retf", 0xCB, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "retfw", 0xCB, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "retfd", 0xCB, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "sahf", 0x9E, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "stc", 0xF9, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "std", 0xFD, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "sti", 0xFB, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "wait", 0x9B, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "xlatb", 0xD7, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "xlat", 0xD7, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 };
 
 static void x86_help(void) { }
@@ -276,7 +378,7 @@ static node_t *parser_parse_address(parser_t *parser, node_t *cur) {
 }
 
 static int x86_find_mnemonic(char *name) {
-	for (int i = 0; i < 43; i++) {
+	for (int i = 0; i < 91; i++) {
 		if ((strlen(mnemonics[i]) == strlen(name)) && !strcasecmp(mnemonics[i], name)) {										// Found?
 			return 1;																											// Yes :)
 		}
@@ -345,10 +447,6 @@ start:		if (parser_check_noval(parser, TOK_TYPE_IDENTIFIER)) {																//
 }
 
 static uint32_t count_childs(node_t *node) {
-	if (node == NULL) {																											// Null pointer check
-		return 0;
-	}
-	
 	uint32_t ret = 0;
 	
 	for (; node != NULL; ret++, node = node->next) ;																			// Just keep on going forward and counting!
@@ -356,14 +454,92 @@ static uint32_t count_childs(node_t *node) {
 	return ret;
 }
 
-static void write_opcode(codegen_t *codegen, int opcode) {
-	if (opcode <= UINT8_MAX) {																									// 1 byte
-		codegen_write_byte(codegen, (uint8_t)opcode);
-	} else if (opcode <= UINT16_MAX) {																							// 2 bytes
-		codegen_write_word(codegen, (uint16_t)opcode);
-	} else {																													// 4 bytes
-		codegen_write_dword(codegen, (uint32_t)opcode);
+static int get_optype(node_t *node) {
+	int ret = 0;
+	
+	if (node->type == NODE_TYPE_IDENTIFIER) {																					// Identifier (symbol name without the brackets), for now, always 32 bits
+		ret |= INSTR_ARG_IMMD;
+	} else if (node->type == NODE_TYPE_NUMBER) {																				// Number
+		uintmax_t val = ((number_node_t*)node)->value;																			// Get the value
+		
+		if (val <= UINT8_MAX) {																									// Byte
+			ret |= INSTR_ARG_IMMB | INSTR_ARG_IMMW | INSTR_ARG_IMMD;
+		} else if (val <= UINT16_MAX) {																							// Word
+			ret |= INSTR_ARG_IMMW | INSTR_ARG_IMMD;
+		} else {																												// DWord
+			ret |= INSTR_ARG_IMMD;
+		}
+	} else if (node->type == NODE_TYPE_REGISTER) {																				// Register
+		char *name = ((register_node_t*)node)->name;
+		int found = 0;
+		
+		for (int i = 0; !found && i < 8; i++) {																					// First, check if it is a 32-bits register
+			if (!strcmp(name, registers[i])) {
+				ret |= INSTR_ARG_GREGD;
+				found = 1;
+			}
+		}
+		
+		for (int i = 8; !found && i < 16; i++) {																				// Or a 16-bits register
+			if (!strcmp(name, registers[i])) {
+				ret |= INSTR_ARG_GREGW;
+				found = 1;
+			}
+		}
+		
+		for (int i = 16; !found && i < 24; i++) {																				// Or a 8-bits register
+			if (!strcmp(name, registers[i])) {
+				ret |= INSTR_ARG_GREGB;
+				found = 1;
+			}
+		}
 	}
+	
+	return ret;
+}
+
+static uint32_t get_opval(codegen_t *codegen, node_t *node, int size, int rel) {
+	codegen_section_t *sect = codegen->current_section;
+	int inc = rel ? sect->size + size : 0;
+	uint32_t ret = 0;
+	
+	if (node->type == NODE_TYPE_IDENTIFIER) {																					// Identifier (symbol)?
+		codegen_add_relocation(codegen, ((identifier_node_t*)node)->value, sect->name, size, sect->size, -inc);					// Yes, add relocation
+	} else if (node->type == NODE_TYPE_NUMBER) {																				// Number?
+		ret = (uint32_t)(((number_node_t*)node)->value) - inc;																	// Yes
+	}
+	
+	return ret;
+}
+
+static int get_gregb(char *name) {
+	for (int i = 0; i < 8; i++) {																							// Search!
+		if (!strcmp(name, gregsb[i])) {																							// Found?
+			return i;																											// Yes!
+		}
+	}
+	
+	return 0;
+}
+
+static int get_gregw(char *name) {
+	for (int i = 0; i < 8; i++) {																							// Search!
+		if (!strcmp(name, gregsw[i])) {																							// Found?
+			return i;																											// Yes!
+		}
+	}
+	
+	return 0;
+}
+
+static int get_gregd(char *name) {
+	for (int i = 0; i < 8; i++) {																							// Search!
+		if (!strcmp(name, gregsd[i])) {																							// Found?
+			return i;																											// Yes!
+		}
+	}
+	
+	return 0;
 }
 
 static int x86_gen(codegen_t *codegen, node_t *node) {
@@ -374,19 +550,23 @@ static int x86_gen(codegen_t *codegen, node_t *node) {
 	}
 	
 	instruction_node_t *inod = (instruction_node_t*)node;
+	
 	uint32_t ops = count_childs(node->childs);
+	int opcode = 0;
 	int exists = 0;
 	int found = 0;
 	int inst = 0;
 	int op1 = 0;
 	int op2 = 0;
 	
-	if (ops > 0) {																												// Too many args (> 2)?
+	if (ops > 1) {																												// Too many args (> 2)?
 		printf("too many operands to the instruction '%s'\n", inod->name);														// ...
 		return -1;
+	} else if (ops == 1) {
+		op1 = get_optype(node->childs);																							// Get the optype from the first operand
 	}
 	
-	for (; inst < 43; inst++) {																									// Let's try to find this instruction!
+	for (; inst < 127; inst++) {																								// Let's try to find this instruction!
 		if ((strlen(instructions[inst].name) != strlen(inod->name)) || strcasecmp(instructions[inst].name, inod->name)) {		// Same name?
 			continue;																											// Nope
 		} else {
@@ -411,8 +591,43 @@ static int x86_gen(codegen_t *codegen, node_t *node) {
 	} else if (!exists) {
 		printf("invalid instruction '%s'\n", inod->name);																		// ... This wasn't supposed to happen
 		return -1;
-	} else if (instructions[inst].optype == INSTR_TYPE_NONE) {																	// No operands!
-		write_opcode(codegen, instructions[inst].opcode);																		// Just write the opcode
+	}
+	
+	
+	if (instructions[inst].alt_addr) {																							// Write the address size override?
+		codegen_write_byte(codegen, 0x66);																						// Yes
+	}
+	
+	if (instructions[inst].optype == INSTR_TYPE_OPREGB) {																		// Add the register to the opcode? (+rb)
+		opcode = instructions[inst].opcode + get_gregb(((register_node_t*)node->childs)->name);
+	} else if (instructions[inst].optype == INSTR_TYPE_OPREGW) {																// Add the register to the opcode? (+rw)
+		opcode = instructions[inst].opcode + get_gregw(((register_node_t*)node->childs)->name);
+	} else if (instructions[inst].optype == INSTR_TYPE_OPREGD) {																// Add the register to the opcode? (+rd)
+		opcode = instructions[inst].opcode + get_gregd(((register_node_t*)node->childs)->name);
+	} else {																													// Just the opcode
+		opcode = instructions[inst].opcode;
+	}
+	
+	if (opcode <= UINT8_MAX) {																									// Write the opcode! 1 byte?
+		codegen_write_byte(codegen, (uint8_t)opcode);
+	} else if (opcode <= UINT16_MAX) {																							// 2 bytes?
+		codegen_write_word(codegen, (uint16_t)opcode);
+	} else {																													// 4 bytes?
+		codegen_write_dword(codegen, (uint32_t)opcode);
+	}
+	
+	if (instructions[inst].optype == INSTR_TYPE_RELB) {																			// 1 bytes after the opcode, but the value it's relative to the end of the instr, not absolute
+		codegen_write_byte(codegen, get_opval(codegen, node->childs, 1, 1));
+	} else if (instructions[inst].optype == INSTR_TYPE_RELW) {																	// 2 bytes after the opcode, but the value it's relative to the end of the instr, not absolute
+		codegen_write_dword(codegen, get_opval(codegen, node->childs, 2, 1));
+	} else if (instructions[inst].optype == INSTR_TYPE_RELD) {																	// 4 bytes after the opcode, but the value it's relative to the end of the instr, not absolute
+		codegen_write_dword(codegen, get_opval(codegen, node->childs, 4, 1));
+	} else if (instructions[inst].optype == INSTR_TYPE_BYTE) {																	// 1 byte after the opcode
+		codegen_write_byte(codegen, (uint8_t)get_opval(codegen, node->childs, 1, 0));
+	} else if (instructions[inst].optype == INSTR_TYPE_WORD) {																	// 2 byte after the opcode
+		codegen_write_word(codegen, (uint16_t)get_opval(codegen, node->childs, 2, 0));
+	} else if (instructions[inst].optype == INSTR_TYPE_DWORD) {																	// 4 byte after the opcode
+		codegen_write_dword(codegen, get_opval(codegen, node->childs, 4, 0));
 	}
 	
 	return 1;

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 28 of 2018, at 17:15 BRT
-// Last edited on December 28 of 2018, at 22:57 BRT
+// Last edited on December 30 of 2018, at 01:05 BRT
 
 #include <arch.h>
 #include <stdio.h>
@@ -97,7 +97,7 @@ void codegen_write_qword(codegen_t *codegen, uint64_t data) {
 	codegen_write_byte(codegen, (uint8_t)(data >> 56));
 }
 
-void codegen_add_relocation(codegen_t *codegen, char *name, char *sect, uint8_t size, uintptr_t loc) {
+void codegen_add_relocation(codegen_t *codegen, char *name, char *sect, uint8_t size, uintptr_t loc, int inc) {
 	if (codegen == NULL || name == NULL || sect == NULL || size == 0) {											// Null pointer check
 		return;
 	}
@@ -121,6 +121,7 @@ void codegen_add_relocation(codegen_t *codegen, char *name, char *sect, uint8_t 
 	cur->sect = sect;
 	cur->size = size;
 	cur->loc = loc;
+	cur->increment = inc;
 	
 	if (codegen->relocs == NULL) {																				// First entry?
 		codegen->relocs = cur;																					// Yeah
@@ -286,7 +287,7 @@ int codegen_gen(codegen_t *codegen) {
 					codegen_write_qword(codegen, 0);
 				}
 				
-				codegen_add_relocation(codegen, sym->value, codegen->current_section->name, def->size, loc);	// And add the relocation!
+				codegen_add_relocation(codegen, sym->value, codegen->current_section->name, def->size, loc, 0);	// And add the relocation!
 			} else if (node->childs->type == NODE_TYPE_NUMBER) {												// Put a integer?
 				number_node_t *num = (number_node_t*)node->childs;												// Yeah!
 				
@@ -357,13 +358,13 @@ int codegen_gen(codegen_t *codegen) {
 			codegen->current_section->size = rel->loc;															// And let's go to the reloc position
 			
 			if (rel->size == 1) {																				// Byte
-				codegen_write_byte(codegen, (uint8_t)(lstart + lbl->loc));
+				codegen_write_byte(codegen, (uint8_t)(lstart + lbl->loc + rel->increment));
 			} else if (rel->size == 2) {																		// Word
-				codegen_write_word(codegen, (uint16_t)(lstart + lbl->loc));
+				codegen_write_word(codegen, (uint16_t)(lstart + lbl->loc + rel->increment));
 			} else if (rel->size == 4) {																		// DWord
-				codegen_write_dword(codegen, (uint32_t)(lstart + lbl->loc));
+				codegen_write_dword(codegen, (uint32_t)(lstart + lbl->loc + rel->increment));
 			} else if (rel->size == 8) {																		// QWord
-				codegen_write_qword(codegen, (uint64_t)(lstart + lbl->loc));
+				codegen_write_qword(codegen, (uint64_t)(lstart + lbl->loc + rel->increment));
 			}
 			
 			codegen->current_section->size = initial;															// Restore the old one pos
