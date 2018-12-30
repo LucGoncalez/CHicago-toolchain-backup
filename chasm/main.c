@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 10:46 BRT
-// Last edited on December 28 of 2018, at 22:09 BRT
+// Last edited on December 29 of 2018, at 12:22 BRT
 
 #include <arch.h>
 #include <stdio.h>
@@ -38,9 +38,34 @@ void *read_file(char *fname) {
 	return buf;																							// Return the buffer!
 }
 
+char *replace_extension(char *fname, char *newext) {
+	char *p;
+	
+	if ((p = strrchr(fname, '.')) == NULL) {															// Let's find the last '.' (the extension)
+		p = malloc(strlen(fname) + strlen(newext) + 1);													// Not found, just add the new extension to the fname
+		
+		strcpy(p, fname);
+		strcat(p, newext);
+	} else {
+		int n;																							// Ok, let's overwrite the extension!
+		
+		n = p - fname;
+		p = malloc(n + strlen(newext) + 1);																// Alloc some space
+		
+		strncpy(p, fname, n);																			// Copy the original string
+		
+		p[n] = '\0';																					// Put the NULL-terminator
+		
+		strcat(p, newext);																				// Put the new extension
+	}
+	
+	return p;
+}
+
 int main(int argc, char **argv) {
 	char *arch = NULL;
 	char *input = NULL;
+	char *output = NULL;
 	
 	if (argc < 2) {																						// Check if we have any arguments
 		printf("Usage: %s [options] file\n", argv[0]);													// We don't have any, just print the usage
@@ -48,14 +73,17 @@ int main(int argc, char **argv) {
 	}
 	
 	for (int i = 1; i < argc; i++) {																	// Let's parse the arguments!
+		int temp = 0;
+		
 		if ((!strcmp(argv[i], "-h")) || (!strcmp(argv[i], "--help"))) {									// Help
 			printf("Usage: %s [options] file...\n", argv[0]);
 			printf("Options:\n");
 			printf("    -h or --help          Show this help dialog\n");
 			printf("    -v or --version       Show the version of this program\n");
 			printf("    -o or --output        Set the output filename\n");
-			printf("    -a or --arch          Set the output processor architecture\n\n");
+			printf("    -a or --arch          Set the output processor architecture\n");
 			printf("Supported processor architectures: "); arch_list_all();
+			arch_help_all();
 			return 0;
 		} else if ((!strcmp(argv[i], "-v")) || (!strcmp(argv[i], "--version"))) {						// Version
 			printf("CHicago Operating System Project\n");
@@ -68,13 +96,20 @@ int main(int argc, char **argv) {
 			} else {
 				arch = argv[++i];
 			}
-		} else {
-			if (input == NULL) {																		// It's the input?
-				input = argv[i];																		// Yes!
-			} else {
-				printf("Error: unrecognized option: '%s'\n", argv[i]);									// No, so it's a unrecognized option
+		} else if ((!strcmp(argv[i], "-o")) || (!strcmp(argv[i], "--output"))) {						// Set the output
+			if ((i + 1) >= argc) {
+				printf("Expected filename after '%s'\n", argv[i]);
 				return 1;
+			} else {
+				output = argv[++i];
 			}
+		} else if ((temp = arch_option(argc, argv, i)) != 0) {											// Architecture-specific option
+			i += temp;
+		} else if (input == NULL) {																		// It's the input?
+			input = argv[i];																			// Yes!
+		} else {
+			printf("Error: unrecognized option: '%s'\n", argv[i]);										// No, so it's a unrecognized option
+			return 1;
 		}
 	}
 	
@@ -84,6 +119,8 @@ int main(int argc, char **argv) {
 	} else if (input == NULL) {																			// We have any input file?
 		printf("Error: expected input file\n");															// No...
 		return 1;
+	} else if (output == NULL) {																		// Set the output name?
+		output = replace_extension(input, ".bin");														// Yeah
 	}
 	
 	char *code = read_file(input);																		// Try to read the source code
@@ -142,6 +179,20 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 	
+	FILE *out = fopen(output, "wb");																	// Try to open the output file
+	
+	if (out == NULL) {
+		codegen_free(codegen);																			// Failed...
+		parser_free(parser);
+		lexer_free(lexer);
+		return 1;
+	}
+	
+	for (codegen_section_t *cur = codegen->sections; cur != NULL; cur = cur->next) {					// Let's write all sections!
+		fwrite(cur->data, cur->size, 1, out);
+	}
+	
+	fclose(out);																						// Close the output file
 	codegen_free(codegen);																				// Free the codegen struct
 	parser_free(parser);																				// Free the parser struct
 	lexer_free(lexer);																					// Free the lexer struct

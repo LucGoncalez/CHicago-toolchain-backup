@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 14:40 BRT
-// Last edited on December 27 of 2018, at 20:23 BRT
+// Last edited on December 29 of 2018, at 22:28 BRT
 
 #include <arch.h>
 #include <lexer.h>
@@ -26,7 +26,7 @@ static arch_t *arch_find(char *name) {
 	return NULL;
 }
 
-int arch_register(char *name, token_t *(*lex)(lexer_t*, token_t*, token_t*), node_t *(*parse)(parser_t*, node_t*), uint8_t (*ttype)(char*), void (*tfree)(token_t*), void (*tprint)(token_t*)) {
+int arch_register(char *name, void (*help)(), int (*option)(int, char**, int), token_t *(*lex)(lexer_t*, token_t*, token_t*), node_t *(*parse)(parser_t*, node_t*), int (*gen)(codegen_t*, node_t*), uint8_t (*ttype)(char*), void (*tfree)(token_t*), void (*tprint)(token_t*)) {
 	if (name == NULL || lex == NULL || ttype == NULL || tfree == NULL || tprint == NULL) {				// We have everything we need?
 		return 0;																						// No...
 	} else if (arch_list == NULL) {																		// First entry?
@@ -44,8 +44,11 @@ int arch_register(char *name, token_t *(*lex)(lexer_t*, token_t*, token_t*), nod
 		}
 		
 		arch_list->arch->name = name;																	// Fill the fields!
+		arch_list->arch->help = help;
+		arch_list->arch->option = option;
 		arch_list->arch->lex = lex;
 		arch_list->arch->parse = parse;
+		arch_list->arch->gen = gen;
 		arch_list->arch->ttype = ttype;
 		arch_list->arch->tfree = tfree;
 		arch_list->arch->tprint = tprint;
@@ -75,8 +78,11 @@ int arch_register(char *name, token_t *(*lex)(lexer_t*, token_t*, token_t*), nod
 	}
 	
 	cur->next->arch->name = name;																		// Fill the fields!
+	cur->next->arch->help = help;
+	cur->next->arch->option = option;
 	cur->next->arch->lex = lex;
 	cur->next->arch->parse = parse;
+	cur->next->arch->gen = gen;
 	cur->next->arch->ttype = ttype;
 	cur->next->arch->tfree = tfree;
 	cur->next->arch->tprint = tprint;
@@ -103,6 +109,30 @@ void arch_list_all() {
 	printf("\n");
 }
 
+void arch_help_all() {
+	for (arch_list_t *cur = arch_list; cur != NULL; cur = cur->next) {									// Just print the help for all the avaliable architectures
+		printf("Options for %s:\n", cur->arch->name);
+		
+		if (cur->arch->help != NULL) {
+			cur->arch->help();
+		}
+	}
+}
+
+void arch_help() {
+	if (arch_current != NULL && arch_current->help != NULL) {											// Check if the arguments are valid
+		arch_current->help();																			// And redirect
+	}
+}
+
+int arch_option(int argc, char **argv, int i) {
+	if (arch_current != NULL && arch_current->option != NULL && argv != NULL) {							// Check if the arguments are valid
+		return arch_current->option(argc, argv, i);														// And redirect
+	}
+	
+	return 0;
+}
+
 token_t *arch_lex(lexer_t *lexer, token_t *list, token_t *cur) {
 	if (arch_current != NULL && arch_current->lex != NULL && lexer != NULL && list != NULL &&
 	    cur != NULL) {																					// Check if the arguments are valid
@@ -115,6 +145,14 @@ token_t *arch_lex(lexer_t *lexer, token_t *list, token_t *cur) {
 node_t *arch_parse(parser_t *parser, node_t *cur) {
 	if (arch_current != NULL && arch_current->parse != NULL && parser != NULL && cur != NULL) {			// Check if the arguments are valid
 		return arch_current->parse(parser, cur);														// And redirect
+	}
+	
+	return 0;
+}
+
+int arch_gen(codegen_t *codegen, node_t *node) {
+	if (arch_current != NULL && arch_current->gen != NULL && codegen != NULL && node != NULL) {			// Check if the arguments are valid
+		return arch_current->gen(codegen, node);														// And redirect
 	}
 	
 	return 0;

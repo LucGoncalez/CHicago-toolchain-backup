@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 03 of 2018, at 19:52 BRT
-// Last edited on December 28 of 2018, at 17:17 BRT
+// Last edited on December 28 of 2018, at 22:38 BRT
 
 #ifndef __X86_H__
 #define __X86_H__
@@ -18,7 +18,7 @@
 
 #define INSTR_TYPE_NONE 0x00
 
-#define INSTR_ARG_NONE 0x00
+#define INSTR_ARG_NONE 0x01
 
 typedef struct {
 	node_t base;

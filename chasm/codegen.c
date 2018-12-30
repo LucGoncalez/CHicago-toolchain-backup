@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 28 of 2018, at 17:15 BRT
-// Last edited on December 28 of 2018, at 22:05 BRT
+// Last edited on December 28 of 2018, at 22:57 BRT
 
 #include <arch.h>
 #include <stdio.h>
@@ -67,8 +67,8 @@ void codegen_write_word(codegen_t *codegen, uint16_t data) {
 		return;
 	}
 	
-	codegen_write_byte(codegen, (uint8_t)(data >> 8));															// Call codegen_write_byte to write all the 2 bytes
-	codegen_write_byte(codegen, (uint8_t)data);
+	codegen_write_byte(codegen, (uint8_t)data);																	// Call codegen_write_byte to write all the 2 bytes
+	codegen_write_byte(codegen, (uint8_t)(data >> 8));
 }
 
 void codegen_write_dword(codegen_t *codegen, uint32_t data) {
@@ -76,10 +76,10 @@ void codegen_write_dword(codegen_t *codegen, uint32_t data) {
 		return;
 	}
 	
-	codegen_write_byte(codegen, (uint8_t)(data >> 24));															// Call codegen_write_byte to write all the 4 bytes
-	codegen_write_byte(codegen, (uint8_t)(data >> 16));
+	codegen_write_byte(codegen, (uint8_t)data);																	// Call codegen_write_byte to write all the 4 bytes
 	codegen_write_byte(codegen, (uint8_t)(data >> 8));
-	codegen_write_byte(codegen, (uint8_t)data);
+	codegen_write_byte(codegen, (uint8_t)(data >> 16));
+	codegen_write_byte(codegen, (uint8_t)(data >> 24));
 }
 
 void codegen_write_qword(codegen_t *codegen, uint64_t data) {
@@ -87,14 +87,14 @@ void codegen_write_qword(codegen_t *codegen, uint64_t data) {
 		return;
 	}
 	
-	codegen_write_byte(codegen, (uint8_t)(data >> 56));															// Call codegen_write_byte to write all the 8 bytes
-	codegen_write_byte(codegen, (uint8_t)(data >> 48));
-	codegen_write_byte(codegen, (uint8_t)(data >> 40));
-	codegen_write_byte(codegen, (uint8_t)(data >> 32));
-	codegen_write_byte(codegen, (uint8_t)(data >> 24));
-	codegen_write_byte(codegen, (uint8_t)(data >> 16));
+	codegen_write_byte(codegen, (uint8_t)data);																	// Call codegen_write_byte to write all the 8 bytes
 	codegen_write_byte(codegen, (uint8_t)(data >> 8));
-	codegen_write_byte(codegen, (uint8_t)data);
+	codegen_write_byte(codegen, (uint8_t)(data >> 16));
+	codegen_write_byte(codegen, (uint8_t)(data >> 24));
+	codegen_write_byte(codegen, (uint8_t)(data >> 32));
+	codegen_write_byte(codegen, (uint8_t)(data >> 40));
+	codegen_write_byte(codegen, (uint8_t)(data >> 48));
+	codegen_write_byte(codegen, (uint8_t)(data >> 56));
 }
 
 void codegen_add_relocation(codegen_t *codegen, char *name, char *sect, uint8_t size, uintptr_t loc) {
@@ -334,8 +334,14 @@ int codegen_gen(codegen_t *codegen) {
 				return 1;
 			}
 		} else {
-			printf("invalid ntype %d\n", node->type);															// Invalid!
-			return 0;
+			int err = arch_gen(codegen, node);																	// Well, i hope thats a arch-specific node
+			
+			if (err == -1) {
+				return 1;																						// Failed...
+			} else if (err == 0) {
+				printf("invalid ntype %d\n", node->type);														// Invalid!
+				return 0;
+			}
 		}
 	}
 	
