@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 17:37 BRT
-// Last edited on December 30 of 2018, at 15:18 BRT
+// Last edited on December 30 of 2018, at 21:13 BRT
 
 #include <arch.h>
 #include <inttypes.h>
@@ -23,17 +23,17 @@ static char *gregsb[8] = { "al", "cl", "dl", "bl", "ah", "ch", "dh", "bh" };
 static char *gregsw[8] = { "ax", "cx", "dx", "bx", "sp", "bp", "si", "di" };
 static char *gregsd[8] = { "eax", "ecx", "edx", "ebx", "esp", "ebp", "esi", "edi" };
 
-static char *mnemonics[91] = {
+static char *mnemonics[96] = {
 	"aaa", "aad", "aam", "aas", "call", "cbw", "cwde", "clc", "cld", "cli",
-	"clts", "cmc", "cwd", "cdq", "daa", "das", "dec", "hlt", "int3", "int",
-	"into", "iret", "iretw", "iretd", "ja", "jae", "jb", "jbe", "jc", "jcxz",
-	"jecxz", "je", "jz", "jg", "jge", "jl", "jle", "jna", "jnae", "jnb",
-	"jnbe", "jnc", "jne", "jng", "jnge", "jnl", "jnle", "jno", "jnp", "jns",
-	"jnz", "jo", "jp", "jpe", "jpo", "js", "jz", "jmp", "lahf", "leave",
-	"loop", "loope", "loopz", "loopne", "loopnz", "nop", "pop", "popa",
-	"popaw", "popad", "popf", "popfw", "popfd", "push", "pusha", "pushaw",
-	"pushad", "pushf", "pushfw", "pushfd", "ret", "retf", "retfw", "retfd",
-	"sahf", "stc", "std", "sti", "wait", "xlatb", "xlat",
+	"clts", "cmc", "cwd", "cdq", "daa", "das", "dec", "hlt", "idiv", "imul",
+	"inc", "int3", "int", "into", "iret", "iretw", "iretd", "ja", "jae", "jb",
+	"jbe", "jc", "jcxz", "jecxz", "je", "jz", "jg", "jge", "jl", "jle", "jna",
+	"jnae", "jnb", "jnbe", "jnc", "jne", "jng", "jnge", "jnl", "jnle", "jno",
+	"jnp", "jns", "jnz", "jo", "jp", "jpe", "jpo", "js", "jz", "jmp", "lahf",
+	"leave", "loop", "loope", "loopz", "loopne", "loopnz", "neg", "nop", "not",
+	"pop", "popa", "popaw", "popad", "popf", "popfw", "popfd", "push", "pusha",
+	"pushaw", "pushad", "pushf", "pushfw", "pushfd", "ret", "retf", "retfw",
+	"retfd", "sahf", "stc", "std", "sti", "wait", "xlatb", "xlat",
 };
 
 struct {
@@ -45,7 +45,7 @@ struct {
 	uint32_t args;
 	uint32_t arg1;
 	uint32_t arg2;
-} instructions[127] = {
+} instructions[148] = {
 	{ "aaa", 0x37, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
 	{ "aad", 0x0AD5, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
@@ -55,6 +55,8 @@ struct {
 	{ "aas", 0x3F, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
 	{ "call", 0xE8, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "call", 0xFF, INSTR_TYPE_MODRM, 1, 2, 1, INSTR_ARG_MODRMW, INSTR_ARG_NONE },
+	{ "call", 0xFF, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MODRMD, INSTR_ARG_NONE },
 	
 	{ "cbw", 0x98, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "cwde", 0x98, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
@@ -76,10 +78,22 @@ struct {
 	
 	{ "das", 0x2F, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
+	{ "dec", 0xFF, INSTR_TYPE_MODRM, 1, 1, 1, INSTR_ARG_MODRMW, INSTR_ARG_NONE },
+	{ "dec", 0xFF, INSTR_TYPE_MODRM, 0, 1, 1, INSTR_ARG_MODRMD, INSTR_ARG_NONE },
 	{ "dec", 0x48, INSTR_TYPE_OPREGW, 1, -1, 1, INSTR_ARG_GREGW, INSTR_ARG_NONE },
 	{ "dec", 0x48, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_GREGD, INSTR_ARG_NONE },
 	
 	{ "hlt", 0xF4, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "idiv", 0xF6, INSTR_TYPE_MODRM, 0, 7, 1, INSTR_ARG_MODRMD, INSTR_ARG_NONE },
+	
+	{ "imul", 0xF7, INSTR_TYPE_MODRM, 1, 5, 1, INSTR_ARG_MODRMW, INSTR_ARG_NONE },
+	{ "imul", 0xF7, INSTR_TYPE_MODRM, 0, 5, 1, INSTR_ARG_MODRMD, INSTR_ARG_NONE },
+	
+	{ "inc", 0xFF, INSTR_TYPE_MODRM, 1, 0, 1, INSTR_ARG_MODRMW, INSTR_ARG_NONE },
+	{ "inc", 0xFF, INSTR_TYPE_MODRM, 0, 0, 1, INSTR_ARG_MODRMD, INSTR_ARG_NONE },
+	{ "inc", 0x40, INSTR_TYPE_OPREGW, 1, -1, 1, INSTR_ARG_GREGW, INSTR_ARG_NONE },
+	{ "inc", 0x40, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_GREGD, INSTR_ARG_NONE },
 	
 	{ "int3", 0xCC, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "int", 0xCD, INSTR_TYPE_BYTE, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
@@ -155,12 +169,20 @@ struct {
 	{ "jz", 0x840F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
 	{ "jmp", 0xE8, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
 	{ "jmp", 0xE9, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jmp", 0xFF, INSTR_TYPE_MODRM, 1, 4, 1, INSTR_ARG_MODRMW, INSTR_ARG_NONE },
+	{ "jmp", 0xFF, INSTR_TYPE_MODRM, 0, 4, 1, INSTR_ARG_MODRMD, INSTR_ARG_NONE },
 	
 	{ "lahf", 0x9F, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
 	{ "leave", 0xC9, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
+	{ "neg", 0xF7, INSTR_TYPE_MODRM, 1, 3, 1, INSTR_ARG_MODRMW, INSTR_ARG_NONE },
+	{ "neg", 0xF7, INSTR_TYPE_MODRM, 0, 3, 1, INSTR_ARG_MODRMD, INSTR_ARG_NONE },
+	
 	{ "nop", 0x90, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "not", 0xF6, INSTR_TYPE_MODRM, 1, 2, 1, INSTR_ARG_MODRMW, INSTR_ARG_NONE },
+	{ "not", 0xF6, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MODRMD, INSTR_ARG_NONE },
 	
 	{ "loop", 0xE2, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
 	{ "loope", 0xE1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
@@ -192,9 +214,13 @@ struct {
 	{ "pushfd", 0x9C, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
 	{ "ret", 0xC3, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "ret", 0xC2, INSTR_TYPE_WORD, 0, -1, 1, INSTR_ARG_IMMW, INSTR_ARG_NONE },
 	{ "retf", 0xCB, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "retf", 0xCA, INSTR_TYPE_WORD, 0, -1, 1, INSTR_ARG_IMMW, INSTR_ARG_NONE },
 	{ "retfw", 0xCB, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "retfw", 0xCA, INSTR_TYPE_WORD, 1, -1, 1, INSTR_ARG_IMMW, INSTR_ARG_NONE },
 	{ "retfd", 0xCB, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "retfd", 0xCA, INSTR_TYPE_WORD, 0, -1, 1, INSTR_ARG_IMMW, INSTR_ARG_NONE },
 	
 	{ "sahf", 0x9E, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
@@ -378,7 +404,7 @@ static node_t *parser_parse_address(parser_t *parser, node_t *cur) {
 }
 
 static int x86_find_mnemonic(char *name) {
-	for (int i = 0; i < 91; i++) {
+	for (int i = 0; i < 96; i++) {
 		if ((strlen(mnemonics[i]) == strlen(name)) && !strcasecmp(mnemonics[i], name)) {										// Found?
 			return 1;																											// Yes :)
 		}
@@ -474,24 +500,53 @@ static int get_optype(node_t *node) {
 		int found = 0;
 		
 		for (int i = 0; !found && i < 8; i++) {																					// First, check if it is a 32-bits register
-			if (!strcmp(name, registers[i])) {
+			if (!strcasecmp(name, registers[i])) {
 				ret |= INSTR_ARG_GREGD;
 				found = 1;
 			}
 		}
 		
 		for (int i = 8; !found && i < 16; i++) {																				// Or a 16-bits register
-			if (!strcmp(name, registers[i])) {
+			if (!strcasecmp(name, registers[i])) {
 				ret |= INSTR_ARG_GREGW;
 				found = 1;
 			}
 		}
 		
 		for (int i = 16; !found && i < 24; i++) {																				// Or a 8-bits register
-			if (!strcmp(name, registers[i])) {
+			if (!strcasecmp(name, registers[i])) {
 				ret |= INSTR_ARG_GREGB;
 				found = 1;
 			}
+		}
+	} else if (node->type == NODE_TYPE_ADDRESS) {																				// Identifier, number or register with the brackets
+		if (node->childs->type == NODE_TYPE_REGISTER) {																			// Register?
+			char *name = ((register_node_t*)node->childs)->name;
+			int found = 0;
+			
+			for (int i = 0; !found && i < 8; i++) {																				// First, check if it is a 32-bits register
+				if (!strcasecmp(name, registers[i])) {
+					ret |= INSTR_ARG_MODRM_REGD;
+					found = 1;
+				}
+			}
+
+			for (int i = 8; !found && i < 16; i++) {																			// Or a 16-bits register
+				if (!strcasecmp(name, registers[i])) {
+					ret |= INSTR_ARG_MODRM_REGW;
+					found = 1;
+				}
+			}
+		} else {
+			ret |= INSTR_ARG_MODRM_ADDR;																						// Identifier/number!
+		}
+		
+		if (((address_node_t*)node)->have_disp) {																				// We have the displacement?
+			ret |= INSTR_ARG_MODRM_DISP;
+		}
+		
+		if (((address_node_t*)node)->have_mul) {																				// We have the scale?
+			ret |= INSTR_ARG_MODRM_MULT;
 		}
 	}
 	
@@ -513,8 +568,8 @@ static uint32_t get_opval(codegen_t *codegen, node_t *node, int size, int rel) {
 }
 
 static int get_gregb(char *name) {
-	for (int i = 0; i < 8; i++) {																							// Search!
-		if (!strcmp(name, gregsb[i])) {																							// Found?
+	for (int i = 0; i < 8; i++) {																								// Search!
+		if (!strcasecmp(name, gregsb[i])) {																						// Found?
 			return i;																											// Yes!
 		}
 	}
@@ -523,8 +578,8 @@ static int get_gregb(char *name) {
 }
 
 static int get_gregw(char *name) {
-	for (int i = 0; i < 8; i++) {																							// Search!
-		if (!strcmp(name, gregsw[i])) {																							// Found?
+	for (int i = 0; i < 8; i++) {																								// Search!
+		if (!strcasecmp(name, gregsw[i])) {																						// Found?
 			return i;																											// Yes!
 		}
 	}
@@ -533,8 +588,8 @@ static int get_gregw(char *name) {
 }
 
 static int get_gregd(char *name) {
-	for (int i = 0; i < 8; i++) {																							// Search!
-		if (!strcmp(name, gregsd[i])) {																							// Found?
+	for (int i = 0; i < 8; i++) {																								// Search!
+		if (!strcasecmp(name, gregsd[i])) {																						// Found?
 			return i;																											// Yes!
 		}
 	}
@@ -566,7 +621,7 @@ static int x86_gen(codegen_t *codegen, node_t *node) {
 		op1 = get_optype(node->childs);																							// Get the optype from the first operand
 	}
 	
-	for (; inst < 127; inst++) {																								// Let's try to find this instruction!
+	for (; inst < 148; inst++) {																								// Let's try to find this instruction!
 		if ((strlen(instructions[inst].name) != strlen(inod->name)) || strcasecmp(instructions[inst].name, inod->name)) {		// Same name?
 			continue;																											// Nope
 		} else {
@@ -628,6 +683,82 @@ static int x86_gen(codegen_t *codegen, node_t *node) {
 		codegen_write_word(codegen, (uint16_t)get_opval(codegen, node->childs, 2, 0));
 	} else if (instructions[inst].optype == INSTR_TYPE_DWORD) {																	// 4 byte after the opcode
 		codegen_write_dword(codegen, get_opval(codegen, node->childs, 4, 0));
+	} else if (instructions[inst].optype == INSTR_TYPE_MODRM) {																	// ModR/M
+		uint8_t ext = (uint8_t)(instructions[inst].extension != -1 ? instructions[inst].extension << 3 : 0);					// First, get the "extension" that some instructions use
+		
+		if (op1 == INSTR_ARG_MODRM_ADDR) {																						// Just a number/identifier in the brackets?
+			codegen_write_byte(codegen, ext | 0x05);																			// Yes, write the modr/m byte
+			codegen_write_dword(codegen, get_opval(codegen, node->childs->childs, 4, 0));										// And the value
+		} else if (op1 == INSTR_ARG_MODRM_REGW) {																				// 16-bits register?
+			if (!strcasecmp(((register_node_t*)node->childs->childs)->name, "bp")) {											// Yes, write the modr/m byte, it would be ext | 0x05
+				codegen_write_word(codegen, 0x4500);																			// Yes, fix that
+			} else {
+				codegen_write_byte(codegen, ext | get_gregw(((register_node_t*)node->childs->childs)->name));					// Nope!
+			}
+			
+			if (!strcasecmp(((register_node_t*)node->childs->childs)->name, "sp")) {											// modr/m = ext | 0x04?
+				codegen_write_byte(codegen, 0x24);																				// Yes, fix!
+			}
+		} else if (op1 == INSTR_ARG_MODRM_REGD) {																				// 32-bits register?
+			if (!strcasecmp(((register_node_t*)node->childs->childs)->name, "ebp")) {											// Yes, write the modr/m byte, it would be ext | 0x05
+				codegen_write_word(codegen, 0x4500);																			// Yes, fix that
+			} else {
+				codegen_write_byte(codegen, ext | get_gregd(((register_node_t*)node->childs->childs)->name));					// Nope!
+			}
+			
+			if (!strcasecmp(((register_node_t*)node->childs->childs)->name, "esp")) {											// modr/m = ext | 0x04?
+				codegen_write_byte(codegen, 0x24);																				// Yes, fix!
+			}
+		} else if (op1 == (INSTR_ARG_MODRM_REGW | INSTR_ARG_MODRM_DISP)) {														// 32-bits register + displacement?
+			uint32_t disp = ((address_node_t*)node->childs)->disp;																// Get the displacement
+			uint8_t dshft = 0x80;
+			
+			if (disp <= UINT8_MAX) {																							// 8-bits disp?
+				dshft = 0x40;																									// Yeah
+			}
+			
+			if (!strcasecmp(((register_node_t*)node->childs->childs)->name, "bp")) {											// Yes, write the modr/m byte, it would be ext | 0x05
+				codegen_write_word(codegen, 0x4500 | dshft);																	// Yes, fix that
+			} else {
+				codegen_write_byte(codegen, ext | get_gregw(((register_node_t*)node->childs->childs)->name) | dshft);			// Nope!
+			}
+			
+			if (!strcasecmp(((register_node_t*)node->childs->childs)->name, "sp")) {											// modr/m = ext | 0x04?
+				codegen_write_byte(codegen, 0x24);																				// Yes, fix!
+			}
+			
+			if (dshft == 0x40) {																								// 8-bits disp?
+				codegen_write_byte(codegen, (uint8_t)disp);																		// Yes
+			} else {
+				codegen_write_dword(codegen, disp);																				// 32-bits disp
+			}
+		} else if (op1 == (INSTR_ARG_MODRM_REGD | INSTR_ARG_MODRM_DISP)) {														// 32-bits register + displacement?
+			uint32_t disp = ((address_node_t*)node->childs)->disp;																// Get the displacement
+			uint8_t dshft = 0x80;
+			
+			if (disp <= UINT8_MAX) {																							// 8-bits disp?
+				dshft = 0x40;																									// Yeah
+			}
+			
+			if (!strcasecmp(((register_node_t*)node->childs->childs)->name, "ebp")) {											// Yes, write the modr/m byte, it would be ext | 0x05
+				codegen_write_word(codegen, 0x4500 | dshft);																	// Yes, fix that
+			} else {
+				codegen_write_byte(codegen, ext | get_gregd(((register_node_t*)node->childs->childs)->name) | dshft);			// Nope!
+			}
+			
+			if (!strcasecmp(((register_node_t*)node->childs->childs)->name, "esp")) {											// modr/m = ext | 0x04?
+				codegen_write_byte(codegen, 0x24);																				// Yes, fix!
+			}
+			
+			if (dshft == 0x40) {																								// 8-bits disp?
+				codegen_write_byte(codegen, (uint8_t)disp);																		// Yes
+			} else {
+				codegen_write_dword(codegen, disp);																				// 32-bits disp
+			}
+		} else {
+			printf("invalid operands to the instruction '%s'\n", inod->name);													// Unsupported for now...
+			return -1;
+		}
 	}
 	
 	return 1;
