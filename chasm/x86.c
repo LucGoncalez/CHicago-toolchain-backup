@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 17:37 BRT
-// Last edited on December 30 of 2018, at 21:13 BRT
+// Last edited on January 01 of 2019, at 15:37 BRT
 
 #include <arch.h>
 #include <inttypes.h>
@@ -23,217 +23,299 @@ static char *gregsb[8] = { "al", "cl", "dl", "bl", "ah", "ch", "dh", "bh" };
 static char *gregsw[8] = { "ax", "cx", "dx", "bx", "sp", "bp", "si", "di" };
 static char *gregsd[8] = { "eax", "ecx", "edx", "ebx", "esp", "ebp", "esi", "edi" };
 
-static char *mnemonics[96] = {
+static char *mnemonics[158] = {
 	"aaa", "aad", "aam", "aas", "call", "cbw", "cwde", "clc", "cld", "cli",
-	"clts", "cmc", "cwd", "cdq", "daa", "das", "dec", "hlt", "idiv", "imul",
-	"inc", "int3", "int", "into", "iret", "iretw", "iretd", "ja", "jae", "jb",
-	"jbe", "jc", "jcxz", "jecxz", "je", "jz", "jg", "jge", "jl", "jle", "jna",
-	"jnae", "jnb", "jnbe", "jnc", "jne", "jng", "jnge", "jnl", "jnle", "jno",
-	"jnp", "jns", "jnz", "jo", "jp", "jpe", "jpo", "js", "jz", "jmp", "lahf",
-	"leave", "loop", "loope", "loopz", "loopne", "loopnz", "neg", "nop", "not",
+	"clts", "cmc", "cmpsb", "cmpsw", "cmpsd", "cwd", "cdq", "daa", "das",
+	"dec", "hlt", "idiv", "imul", "inc", "insb", "insw", "insd", "int3", "int",
+	"into", "iret", "iretw", "iretd", "ja", "jae", "jb", "jbe", "jc", "jcxz",
+	"jecxz", "je", "jz", "jg", "jge", "jl", "jle", "jna", "jnae", "jnb", "jnbe",
+	"jnc", "jne", "jng", "jnge", "jnl", "jnle", "jno", "jnp", "jns", "jnz", "jo",
+	"jp", "jpe", "jpo", "js", "jz", "jmp", "lahf", "leave", "lgdt", "lidt", "lldt",
+	"lmsw", "lodsb", "lodsw", "lodsd", "loop", "loope", "loopz", "loopne", "loopnz",
+	"ltr", "movsb", "movsw", "movsd", "neg", "nop", "not", "outsb", "outsw", "outsd",
 	"pop", "popa", "popaw", "popad", "popf", "popfw", "popfd", "push", "pusha",
-	"pushaw", "pushad", "pushf", "pushfw", "pushfd", "ret", "retf", "retfw",
-	"retfd", "sahf", "stc", "std", "sti", "wait", "xlatb", "xlat",
+	"pushaw", "pushad", "pushf", "pushfw", "pushfd", "ret", "retf", "retfw", "retfd",
+	"sahf", "scasb", "scasw", "scasd", "seta", "setae", "setb", "setbe", "setc",
+	"sete", "setg", "setge", "setl", "setle", "setna", "setnae", "setnb", "setnbe",
+	"setnc", "setne", "setng", "setnge", "setnl", "setnle", "setno", "setnp", "setns",
+	"setnz", "seto", "setp", "setpe", "setpo", "sets", "setz", "sgdt", "sidt", "smsw",
+	"stc", "std", "sti", "stosb", "stosw", "stosd", "str", "verr", "verrw", "wait",
+	"xlatb", "xlat",
 };
 
 struct {
 	char *name;
 	int opcode;
+	int postop;
 	int optype;
 	int alt_addr;
 	int extension;
 	uint32_t args;
 	uint32_t arg1;
 	uint32_t arg2;
-} instructions[148] = {
-	{ "aaa", 0x37, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+} instructions[206] = {
+	{ "aaa", 0x37, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "aad", 0x0AD5, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "aad", 0xD5, 0x0A, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "aam", 0x0AD4, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "aam", 0xD4, 0x0A, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "aas", 0x3F, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "aas", 0x3F, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "call", 0xE8, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "call", 0xFF, INSTR_TYPE_MODRM, 1, 2, 1, INSTR_ARG_MODRMW, INSTR_ARG_NONE },
-	{ "call", 0xFF, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MODRMD, INSTR_ARG_NONE },
+	{ "call", 0xE8, -1, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "call", 0xFF, -1, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "call", 0x9A, -1, INSTR_TYPE_POINTER, 0, -1, 1, INSTR_ARG_POINTER, INSTR_ARG_NONE },
 	
-	{ "cbw", 0x98, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "cwde", 0x98, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "cbw", 0x98, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "cwde", 0x98, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "clc", 0xF8, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "clc", 0xF8, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "cld", 0xFC, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "cld", 0xFC, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "cli", 0xFA, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "cli", 0xFA, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "clts", 0x060F, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "clts", 0x0F, 0x06, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "cmc", 0xF5, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "cmc", 0xF5, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "cwd", 0x99, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "cdq", 0x99, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "cmpsb", 0xA6, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "cmpsw", 0xA7, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "cmpsd", 0xA7, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "daa", 0x27, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "cwd", 0x99, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "cdq", 0x99, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "das", 0x2F, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "daa", 0x27, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "dec", 0xFF, INSTR_TYPE_MODRM, 1, 1, 1, INSTR_ARG_MODRMW, INSTR_ARG_NONE },
-	{ "dec", 0xFF, INSTR_TYPE_MODRM, 0, 1, 1, INSTR_ARG_MODRMD, INSTR_ARG_NONE },
-	{ "dec", 0x48, INSTR_TYPE_OPREGW, 1, -1, 1, INSTR_ARG_GREGW, INSTR_ARG_NONE },
-	{ "dec", 0x48, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_GREGD, INSTR_ARG_NONE },
+	{ "das", 0x2F, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "hlt", 0xF4, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "dec", 0xFF, -1, INSTR_TYPE_MODRM, 0, 1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "dec", 0x48, -1, INSTR_TYPE_OPREGW, 1, -1, 1, INSTR_ARG_GREGW, INSTR_ARG_NONE },
+	{ "dec", 0x48, -1, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_GREGD, INSTR_ARG_NONE },
 	
-	{ "idiv", 0xF6, INSTR_TYPE_MODRM, 0, 7, 1, INSTR_ARG_MODRMD, INSTR_ARG_NONE },
+	{ "hlt", 0xF4, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "imul", 0xF7, INSTR_TYPE_MODRM, 1, 5, 1, INSTR_ARG_MODRMW, INSTR_ARG_NONE },
-	{ "imul", 0xF7, INSTR_TYPE_MODRM, 0, 5, 1, INSTR_ARG_MODRMD, INSTR_ARG_NONE },
+	{ "idiv", 0xF6, -1, INSTR_TYPE_MODRM, 0, 7, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	
-	{ "inc", 0xFF, INSTR_TYPE_MODRM, 1, 0, 1, INSTR_ARG_MODRMW, INSTR_ARG_NONE },
-	{ "inc", 0xFF, INSTR_TYPE_MODRM, 0, 0, 1, INSTR_ARG_MODRMD, INSTR_ARG_NONE },
-	{ "inc", 0x40, INSTR_TYPE_OPREGW, 1, -1, 1, INSTR_ARG_GREGW, INSTR_ARG_NONE },
-	{ "inc", 0x40, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_GREGD, INSTR_ARG_NONE },
+	{ "imul", 0xF7, -1, INSTR_TYPE_MODRM, 0, 5, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	
-	{ "int3", 0xCC, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "int", 0xCD, INSTR_TYPE_BYTE, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "into", 0xCE, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "inc", 0xFF, -1, INSTR_TYPE_MODRM, 0, 0, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "inc", 0x40, -1, INSTR_TYPE_OPREGW, 1, -1, 1, INSTR_ARG_GREGW, INSTR_ARG_NONE },
+	{ "inc", 0x40, -1, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_GREGD, INSTR_ARG_NONE },
 	
-	{ "iret", 0xCF, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "iretw", 0xCF, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "iretd", 0xCF, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "insb", 0x6C, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "insw", 0x6D, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "insd", 0x6D, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "ja", 0x77, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jae", 0x73, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jb", 0x72, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jbe", 0x76, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jc", 0x72, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jcxz", 0xE3, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jecxz", 0xE3, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "je", 0x74, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jz", 0x74, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jg", 0x7F, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jge", 0x7D, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jl", 0x7C, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jle", 0x7E, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jna", 0x76, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jnae", 0x72, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jnb", 0x73, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jnbe", 0x77, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jnc", 0x73, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jne", 0x75, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jng", 0x7E, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jnge", 0x7C, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jnl", 0x7D, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jnle", 0x7F, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jno", 0x71, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jnp", 0x7B, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jns", 0x79, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jnz", 0x75, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jo", 0x70, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jp", 0x7A, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jpe", 0x7A, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jpo", 0x7B, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "js", 0x78, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jz", 0x74, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "ja", 0x870F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jae", 0x830F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jb", 0x820F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jbe", 0x860F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jc", 0x820F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "je", 0x840F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jz", 0x840F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jg", 0x8F0F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jge", 0x8D0F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jl", 0x8C0F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jle", 0x8E0F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jna", 0x860F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jnae", 0x820F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jnb", 0x830F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jnbe", 0x870F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jnc", 0x830F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jne", 0x850F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jng", 0x8E0F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jnge", 0x8C0F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jnl", 0x8D0F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jnle", 0x8F0F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jno", 0x810F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jnp", 0x8B0F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jns", 0x890F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jnz", 0x850F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jo", 0x800F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jp", 0x8A0F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jpe", 0x8A0F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jpo", 0x8B0F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "js", 0x880F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jz", 0x840F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jmp", 0xE8, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jmp", 0xE9, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jmp", 0xFF, INSTR_TYPE_MODRM, 1, 4, 1, INSTR_ARG_MODRMW, INSTR_ARG_NONE },
-	{ "jmp", 0xFF, INSTR_TYPE_MODRM, 0, 4, 1, INSTR_ARG_MODRMD, INSTR_ARG_NONE },
+	{ "int3", 0xCC, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "int", 0xCD, -1, INSTR_TYPE_BYTE, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "into", 0xCE, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "lahf", 0x9F, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "iret", 0xCF, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "iretw", 0xCF, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "iretd", 0xCF, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "leave", 0xC9, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "ja", 0x77, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jae", 0x73, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jb", 0x72, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jbe", 0x76, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jc", 0x72, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jcxz", 0xE3, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jecxz", 0xE3, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "je", 0x74, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jz", 0x74, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jg", 0x7F, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jge", 0x7D, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jl", 0x7C, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jle", 0x7E, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jna", 0x76, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jnae", 0x72, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jnb", 0x73, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jnbe", 0x77, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jnc", 0x73, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jne", 0x75, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jng", 0x7E, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jnge", 0x7C, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jnl", 0x7D, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jnle", 0x7F, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jno", 0x71, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jnp", 0x7B, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jns", 0x79, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jnz", 0x75, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jo", 0x70, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jp", 0x7A, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jpe", 0x7A, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jpo", 0x7B, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "js", 0x78, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jz", 0x74, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "ja", 0x87, -1, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jae", 0x0F, 0x83, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jb", 0x0F, 0x82, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jbe", 0x0F, 0x86, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jc", 0x0F, 0x82, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "je", 0x0F, 0x84, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jz", 0x0F, 0x84, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jg", 0x0F, 0x8F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jge", 0x0F, 0x8D, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jl", 0x0F, 0x8C, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jle", 0x0F, 0x8E, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jna", 0x0F, 0x86, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jnae", 0x0F, 0x82, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jnb", 0x0F, 0x83, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jnbe", 0x0F, 0x87, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jnc", 0x0F, 0x83, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jne", 0x0F, 0x85, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jng", 0x0F, 0x8E, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jnge", 0x0F, 0x8C, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jnl", 0x0F, 0x8D, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jnle", 0x0F, 0x8F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jno", 0x0F, 0x81, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jnp", 0x0F, 0x8B, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jns", 0x0F, 0x89, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jnz", 0x0F, 0x85, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jo", 0x0F, 0x80, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jp", 0x0F, 0x8A, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jpe", 0x0F, 0x8A, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jpo", 0x0F, 0x8B, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "js", 0x0F, 0x88, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jz", 0x0F, 0x84, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jmp", 0xE8, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jmp", 0xE9, -1, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "jmp", 0xFF, -1, INSTR_TYPE_MODRM, 0, 4, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "jmp", 0xEA, -1, INSTR_TYPE_POINTER, 0, -1, 1, INSTR_ARG_POINTER, INSTR_ARG_NONE },
 	
-	{ "neg", 0xF7, INSTR_TYPE_MODRM, 1, 3, 1, INSTR_ARG_MODRMW, INSTR_ARG_NONE },
-	{ "neg", 0xF7, INSTR_TYPE_MODRM, 0, 3, 1, INSTR_ARG_MODRMD, INSTR_ARG_NONE },
+	{ "lahf", 0x9F, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "nop", 0x90, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "leave", 0xC9, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "not", 0xF6, INSTR_TYPE_MODRM, 1, 2, 1, INSTR_ARG_MODRMW, INSTR_ARG_NONE },
-	{ "not", 0xF6, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MODRMD, INSTR_ARG_NONE },
+	{ "lgdt", 0x0F, 0x01, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "lidt", 0x0F, 0x01, INSTR_TYPE_MODRM, 0, 3, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	
-	{ "loop", 0xE2, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "loope", 0xE1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "loopz", 0xE1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "loopne", 0xE0, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "loopnz", 0xE0, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "lldt", 0x0F, 0x00, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	
-	{ "pop", 0x58, INSTR_TYPE_OPREGW, 1, -1, 1, INSTR_ARG_GREGW, INSTR_ARG_NONE },
-	{ "pop", 0x58, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_GREGD, INSTR_ARG_NONE },
+	{ "lmsw", 0x0F, 0x01, INSTR_TYPE_MODRM, 0, 6, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	
-	{ "popa", 0x61, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "popaw", 0x61, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "popad", 0x61, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "lodsb", 0xAC, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "lodsw", 0xAD, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "lodsd", 0xAD, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "popf", 0x9D, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "popfw", 0x9D, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "popfd", 0x9D, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "loop", 0xE2, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "loope", 0xE1, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "loopz", 0xE1, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "loopne", 0xE0, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "loopnz", 0xE0, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
 	
-	{ "push", 0x50, INSTR_TYPE_OPREGW, 1, -1, 1, INSTR_ARG_GREGW, INSTR_ARG_NONE },
-	{ "push", 0x50, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_GREGD, INSTR_ARG_NONE },
-	{ "push", 0x68, INSTR_TYPE_DWORD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "ltr", 0x0F, 0x00, INSTR_TYPE_MODRM, 0, 6, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	
-	{ "pusha", 0x60, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "pushaw", 0x60, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "pushad", 0x60, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "movsb", 0xA4, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "movsw", 0xA5, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "movsd", 0xA5, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "pushf", 0x9C, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "pushfw", 0x9C, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "pushfd", 0x9C, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "neg", 0xF7, -1, INSTR_TYPE_MODRM, 0, 3, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	
-	{ "ret", 0xC3, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "ret", 0xC2, INSTR_TYPE_WORD, 0, -1, 1, INSTR_ARG_IMMW, INSTR_ARG_NONE },
-	{ "retf", 0xCB, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "retf", 0xCA, INSTR_TYPE_WORD, 0, -1, 1, INSTR_ARG_IMMW, INSTR_ARG_NONE },
-	{ "retfw", 0xCB, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "retfw", 0xCA, INSTR_TYPE_WORD, 1, -1, 1, INSTR_ARG_IMMW, INSTR_ARG_NONE },
-	{ "retfd", 0xCB, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "retfd", 0xCA, INSTR_TYPE_WORD, 0, -1, 1, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	{ "nop", 0x90, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "sahf", 0x9E, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "not", 0xF6, -1, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	
-	{ "stc", 0xF9, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "outsb", 0x6E, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "outsw", 0x6F, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "outsd", 0x6F, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "std", 0xFD, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "pop", 0x58, -1, INSTR_TYPE_OPREGW, 1, -1, 1, INSTR_ARG_GREGW, INSTR_ARG_NONE },
+	{ "pop", 0x58, -1, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_GREGD, INSTR_ARG_NONE },
 	
-	{ "sti", 0xFB, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "popa", 0x61, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "popaw", 0x61, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "popad", 0x61, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "wait", 0x9B, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "popf", 0x9D, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "popfw", 0x9D, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "popfd", 0x9D, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "xlatb", 0xD7, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "xlat", 0xD7, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "push", 0x50, -1, INSTR_TYPE_OPREGW, 1, -1, 1, INSTR_ARG_GREGW, INSTR_ARG_NONE },
+	{ "push", 0x50, -1, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_GREGD, INSTR_ARG_NONE },
+	{ "push", 0x68, -1, INSTR_TYPE_DWORD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	
+	{ "pusha", 0x60, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "pushaw", 0x60, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "pushad", 0x60, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "pushf", 0x9C, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "pushfw", 0x9C, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "pushfd", 0x9C, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "ret", 0xC3, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "ret", 0xC2, -1, INSTR_TYPE_WORD, 0, -1, 1, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	{ "retf", 0xCB, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "retf", 0xCA, -1, INSTR_TYPE_WORD, 0, -1, 1, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	{ "retfw", 0xCB, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "retfw", 0xCA, -1, INSTR_TYPE_WORD, 1, -1, 1, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	{ "retfd", 0xCB, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "retfd", 0xCA, -1, INSTR_TYPE_WORD, 0, -1, 1, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	
+	{ "sahf", 0x9E, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "scasb", 0xAE, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "scasw", 0xAF, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "scasd", 0xAF, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "seta", 0x0F, 0x97, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "setae", 0x0F, 0x93, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "setb", 0x0F, 0x92, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "setbe", 0x0F, 0x96, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "setc", 0x0F, 0x92, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "sete", 0x0F, 0x94, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "setz", 0x0F, 0x94, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "setg", 0x0F, 0x9F, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "setge", 0x0F, 0x9D, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "setl", 0x0F, 0x9C, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "setle", 0x0F, 0x9E, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "setna", 0x0F, 0x96, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "setnae", 0x0F, 0x92, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "setnb", 0x0F, 0x93, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "setnbe", 0x0F, 0x97, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "setnc", 0x0F, 0x93, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "setne", 0x0F, 0x95, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "setng", 0x0F, 0x9E, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "setnge", 0x0F, 0x9C, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "setnl", 0x0F, 0x9D, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "setnle", 0x0F, 0x9F, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "setno", 0x0F, 0x91, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "setnp", 0x0F, 0x9B, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "setns", 0x0F, 0x99, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "setnz", 0x0F, 0x95, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "seto", 0x0F, 0x90, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "setp", 0x0F, 0x9A, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "setpe", 0x0F, 0x9A, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "setpo", 0x0F, 0x9B, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "sets", 0x0F, 0x98, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "setz", 0x0F, 0x94, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "sgdt", 0x0F, 0x01, INSTR_TYPE_MODRM, 0, 0, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "sidt", 0x0F, 0x01, INSTR_TYPE_MODRM, 0, 1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "smsw", 0x0F, 0x01, INSTR_TYPE_MODRM, 0, 4, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "stc", 0xF9, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "std", 0xFD, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "sti", 0xFB, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "stosb", 0xAA, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "stosw", 0xAB, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "stosd", 0xAB, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "str", 0x0F, 0x00, INSTR_TYPE_MODRM, 0, 1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "verr", 0x0F, 0x00, INSTR_TYPE_MODRM, 0, 4, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "verrw", 0x0F, 0x00, INSTR_TYPE_MODRM, 0, 5, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "wait", 0x9B, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "xlatb", 0xD7, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "xlat", 0xD7, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 };
 
 static void x86_help(void) { }
@@ -336,6 +418,27 @@ static node_t *parser_parse_register(parser_t *parser, node_t *cur) {
 	return ret;
 }
 
+static node_t *parser_parse_pointer(parser_t *parser, node_t *cur, node_t *left) {
+	if (parser_check_noval(parser, TOK_TYPE_IDENTIFIER)) {																		// Identifier?
+		left->next = parser_parse_identifier(parser, NULL);
+	} else if (parser_check_noval(parser, TOK_TYPE_NUMBER)) {																	// Number?
+		left->next = parser_parse_number(parser, NULL);
+	}
+	
+	if (left->next == NULL) {
+		return NULL;																											// ...
+	}
+	
+	node_t *ret = parser_new_node(cur, sizeof(node_t));																			// Create the node
+	
+	if (ret != NULL) {																											// Failed?
+		ret->type = NODE_TYPE_POINTER;																							// No, so let's set the type
+		ret->childs = left;																										// The val
+	}
+	
+	return ret;
+}
+
 static node_t *parser_parse_address(parser_t *parser, node_t *cur) {
 	node_t *val = NULL;																											// Let's get the val
 	int have_disp = 0;
@@ -345,11 +448,21 @@ static node_t *parser_parse_address(parser_t *parser, node_t *cur) {
 	
 	if (parser_check_noval(parser, TOK_TYPE_IDENTIFIER)) {																		// Identifier?
 		val = parser_parse_identifier(parser, NULL);
+		
+		if (parser_accept_noval(parser, TOK_TYPE_COLON)) {																		// Pointer?
+			val = parser_parse_pointer(parser, NULL, val);																		// Yes
+		}
 	} else if (parser_check_noval(parser, TOK_TYPE_NUMBER)) {																	// Number?
 		val = parser_parse_number(parser, NULL);
+		
+		if (parser_accept_noval(parser, TOK_TYPE_COLON)) {																		// Pointer?
+			val = parser_parse_pointer(parser, NULL, val);																		// Yes
+		}
 	} else if (parser_check_noval(parser, TOK_TYPE_REGISTER)) {																	// Register?
 		val = parser_parse_register(parser, NULL);
-	} else {
+	}
+	
+	if (val == NULL) {
 		return NULL;																											// ...
 	}
 	
@@ -404,7 +517,7 @@ static node_t *parser_parse_address(parser_t *parser, node_t *cur) {
 }
 
 static int x86_find_mnemonic(char *name) {
-	for (int i = 0; i < 96; i++) {
+	for (int i = 0; i < 158; i++) {
 		if ((strlen(mnemonics[i]) == strlen(name)) && !strcasecmp(mnemonics[i], name)) {										// Found?
 			return 1;																											// Yes :)
 		}
@@ -414,7 +527,7 @@ static int x86_find_mnemonic(char *name) {
 }
 
 static node_t *x86_parse(parser_t *parser, node_t *cur) {
-	if (parser == NULL || cur == NULL) {																						// Null pointer check
+	if (parser == NULL) {																										// Null pointer check
 		return NULL;	
 	}
 	
@@ -426,14 +539,32 @@ static node_t *x86_parse(parser_t *parser, node_t *cur) {
 		
 		if (!parser_accept_noval(parser, TOK_TYPE_EOS)) {																		// We have any argument?
 start:		if (parser_check_noval(parser, TOK_TYPE_IDENTIFIER)) {																// Yes, identifier?
-				args = parser_parse_identifier(parser, args);
+				node_t *arg = parser_parse_identifier(parser, NULL);
+				
+				if (parser_accept_noval(parser, TOK_TYPE_COLON)) {																// Pointer?
+					args = parser_parse_pointer(parser, args, arg);																// Yes
+				} else if (args != NULL) {																						// Nope, first op?
+					args->next = arg;																							// Nope
+				} else {
+					args = arg;																									// Yes
+				}
 			} else if (parser_check_noval(parser, TOK_TYPE_NUMBER)) {															// Number?
-				args = parser_parse_number(parser, args);
+				node_t *arg = parser_parse_number(parser, NULL);
+				
+				if (parser_accept_noval(parser, TOK_TYPE_COLON)) {																// Pointer?
+					args = parser_parse_pointer(parser, args, arg);																// Yes
+				} else if (args != NULL) {																						// Nope, first op?
+					args = arg;																									// Nope
+				} else {
+					args = arg;																									// Yes
+				}
 			} else if (parser_check_noval(parser, TOK_TYPE_REGISTER)) {															// Registers?
 				args = parser_parse_register(parser, args);
 			} else if (parser_accept_noval(parser, TOK_TYPE_OBRAC)) {															// Address
 				args = parser_parse_address(parser, args);
-			} else {
+			}
+			
+			if (args == NULL) {
 				printf("%s: %d: %d: invalid argument\n", tok->filename, tok->line, tok->col);									// Invalid, return -1 (error)
 				
 				if (args != NULL) {
@@ -521,24 +652,9 @@ static int get_optype(node_t *node) {
 		}
 	} else if (node->type == NODE_TYPE_ADDRESS) {																				// Identifier, number or register with the brackets
 		if (node->childs->type == NODE_TYPE_REGISTER) {																			// Register?
-			char *name = ((register_node_t*)node->childs)->name;
-			int found = 0;
-			
-			for (int i = 0; !found && i < 8; i++) {																				// First, check if it is a 32-bits register
-				if (!strcasecmp(name, registers[i])) {
-					ret |= INSTR_ARG_MODRM_REGD;
-					found = 1;
-				}
-			}
-
-			for (int i = 8; !found && i < 16; i++) {																			// Or a 16-bits register
-				if (!strcasecmp(name, registers[i])) {
-					ret |= INSTR_ARG_MODRM_REGW;
-					found = 1;
-				}
-			}
+			ret |= INSTR_ARG_MODRM_REG;
 		} else {
-			ret |= INSTR_ARG_MODRM_ADDR;																						// Identifier/number!
+			ret |= INSTR_ARG_MODRM_ADDR;																						// Identifier/number?
 		}
 		
 		if (((address_node_t*)node)->have_disp) {																				// We have the displacement?
@@ -548,6 +664,8 @@ static int get_optype(node_t *node) {
 		if (((address_node_t*)node)->have_mul) {																				// We have the scale?
 			ret |= INSTR_ARG_MODRM_MULT;
 		}
+	} else if (node->type == NODE_TYPE_POINTER) {																				// Pointer
+		ret |= INSTR_ARG_POINTER;
 	}
 	
 	return ret;
@@ -607,9 +725,12 @@ static int x86_gen(codegen_t *codegen, node_t *node) {
 	instruction_node_t *inod = (instruction_node_t*)node;
 	
 	uint32_t ops = count_childs(node->childs);
+	uint32_t bestop1 = 0;
+	uint32_t bestop2 = 0;
 	int opcode = 0;
 	int exists = 0;
 	int found = 0;
+	int instc = 0;
 	int inst = 0;
 	int op1 = 0;
 	int op2 = 0;
@@ -621,23 +742,34 @@ static int x86_gen(codegen_t *codegen, node_t *node) {
 		op1 = get_optype(node->childs);																							// Get the optype from the first operand
 	}
 	
-	for (; inst < 148; inst++) {																								// Let's try to find this instruction!
-		if ((strlen(instructions[inst].name) != strlen(inod->name)) || strcasecmp(instructions[inst].name, inod->name)) {		// Same name?
+	for (; instc < 206; instc++) {																								// Let's try to find this instruction!
+		if ((strlen(instructions[instc].name) != strlen(inod->name)) || strcasecmp(instructions[instc].name, inod->name)) {		// Same name?
 			continue;																											// Nope
 		} else {
 			exists = 1;																											// Ok, at least this instr exists!
 		}
 		
-		if (instructions[inst].args != ops) {																					// Same operand count?
+		if (instructions[instc].args != ops) {																					// Same operand count?
 			continue;																											// Nope
-		} else if (ops == 1 && (op1 & instructions[inst].arg1) == 0) {															// Valid operands (we only need to check one)
+		} else if (ops == 1 && (op1 & instructions[instc].arg1) == 0) {															// Valid operands (we only need to check one)
 			continue;
-		} else if (ops == 2 && ((op1 & instructions[inst].arg1) == 0 || (op2 & instructions[inst].arg2) == 0)) {				// We need to check two operands
+		} else if (ops == 2 && ((op1 & instructions[instc].arg1) == 0 || (op2 & instructions[instc].arg2) == 0)) {				// We need to check two operands
 			continue;
 		}
 		
 		found = 1;																												// Ok, we found it!
-		break;
+		
+		if (ops == 0) {
+			inst = instc;
+		} else if (ops >= 1 && instructions[instc].arg1 - (op1 & instructions[instc].arg1) >= bestop1) {						// Best one?
+			inst = instc;																										// Yes
+			bestop1 = instructions[instc].arg1 - (op1 & instructions[instc].arg1);
+			bestop2 = instructions[instc].arg2 - (op2 & instructions[instc].arg2);
+		} else if (ops >= 2 && instructions[instc].arg2 - (op2 & instructions[instc].arg2) >= bestop2) {						// Best one?
+			inst = instc;																										// Yes
+			bestop1 = instructions[instc].arg1 - (op1 & instructions[instc].arg1);
+			bestop2 = instructions[instc].arg2 - (op2 & instructions[instc].arg2);
+		}
 	}
 	
 	if (!found && exists) {																										// Invalid operands?
@@ -663,12 +795,10 @@ static int x86_gen(codegen_t *codegen, node_t *node) {
 		opcode = instructions[inst].opcode;
 	}
 	
-	if (opcode <= UINT8_MAX) {																									// Write the opcode! 1 byte?
-		codegen_write_byte(codegen, (uint8_t)opcode);
-	} else if (opcode <= UINT16_MAX) {																							// 2 bytes?
-		codegen_write_word(codegen, (uint16_t)opcode);
-	} else {																													// 4 bytes?
-		codegen_write_dword(codegen, (uint32_t)opcode);
+	codegen_write_byte(codegen, opcode);																						// Write the opcode
+	
+	if (instructions[inst].postop != -1) {																						// Two bytes opcode?
+		codegen_write_byte(codegen, instructions[inst].postop);																	// Yes
 	}
 	
 	if (instructions[inst].optype == INSTR_TYPE_RELB) {																			// 1 bytes after the opcode, but the value it's relative to the end of the instr, not absolute
@@ -689,17 +819,7 @@ static int x86_gen(codegen_t *codegen, node_t *node) {
 		if (op1 == INSTR_ARG_MODRM_ADDR) {																						// Just a number/identifier in the brackets?
 			codegen_write_byte(codegen, ext | 0x05);																			// Yes, write the modr/m byte
 			codegen_write_dword(codegen, get_opval(codegen, node->childs->childs, 4, 0));										// And the value
-		} else if (op1 == INSTR_ARG_MODRM_REGW) {																				// 16-bits register?
-			if (!strcasecmp(((register_node_t*)node->childs->childs)->name, "bp")) {											// Yes, write the modr/m byte, it would be ext | 0x05
-				codegen_write_word(codegen, 0x4500);																			// Yes, fix that
-			} else {
-				codegen_write_byte(codegen, ext | get_gregw(((register_node_t*)node->childs->childs)->name));					// Nope!
-			}
-			
-			if (!strcasecmp(((register_node_t*)node->childs->childs)->name, "sp")) {											// modr/m = ext | 0x04?
-				codegen_write_byte(codegen, 0x24);																				// Yes, fix!
-			}
-		} else if (op1 == INSTR_ARG_MODRM_REGD) {																				// 32-bits register?
+		} else if (op1 == INSTR_ARG_MODRM_REG) {																				// 32-bits register?
 			if (!strcasecmp(((register_node_t*)node->childs->childs)->name, "ebp")) {											// Yes, write the modr/m byte, it would be ext | 0x05
 				codegen_write_word(codegen, 0x4500);																			// Yes, fix that
 			} else {
@@ -709,34 +829,11 @@ static int x86_gen(codegen_t *codegen, node_t *node) {
 			if (!strcasecmp(((register_node_t*)node->childs->childs)->name, "esp")) {											// modr/m = ext | 0x04?
 				codegen_write_byte(codegen, 0x24);																				// Yes, fix!
 			}
-		} else if (op1 == (INSTR_ARG_MODRM_REGW | INSTR_ARG_MODRM_DISP)) {														// 32-bits register + displacement?
+		} else if (op1 == (INSTR_ARG_MODRM_REG | INSTR_ARG_MODRM_DISP)) {														// 32-bits register + displacement?
 			uint32_t disp = ((address_node_t*)node->childs)->disp;																// Get the displacement
 			uint8_t dshft = 0x80;
 			
-			if (disp <= UINT8_MAX) {																							// 8-bits disp?
-				dshft = 0x40;																									// Yeah
-			}
-			
-			if (!strcasecmp(((register_node_t*)node->childs->childs)->name, "bp")) {											// Yes, write the modr/m byte, it would be ext | 0x05
-				codegen_write_word(codegen, 0x4500 | dshft);																	// Yes, fix that
-			} else {
-				codegen_write_byte(codegen, ext | get_gregw(((register_node_t*)node->childs->childs)->name) | dshft);			// Nope!
-			}
-			
-			if (!strcasecmp(((register_node_t*)node->childs->childs)->name, "sp")) {											// modr/m = ext | 0x04?
-				codegen_write_byte(codegen, 0x24);																				// Yes, fix!
-			}
-			
-			if (dshft == 0x40) {																								// 8-bits disp?
-				codegen_write_byte(codegen, (uint8_t)disp);																		// Yes
-			} else {
-				codegen_write_dword(codegen, disp);																				// 32-bits disp
-			}
-		} else if (op1 == (INSTR_ARG_MODRM_REGD | INSTR_ARG_MODRM_DISP)) {														// 32-bits register + displacement?
-			uint32_t disp = ((address_node_t*)node->childs)->disp;																// Get the displacement
-			uint8_t dshft = 0x80;
-			
-			if (disp <= UINT8_MAX) {																							// 8-bits disp?
+			if (((int32_t)disp <= INT8_MAX) || ((int32_t)disp >= INT8_MIN)) {													// 8-bits disp?
 				dshft = 0x40;																									// Yeah
 			}
 			
@@ -759,6 +856,9 @@ static int x86_gen(codegen_t *codegen, node_t *node) {
 			printf("invalid operands to the instruction '%s'\n", inod->name);													// Unsupported for now...
 			return -1;
 		}
+	} else if (instructions[inst].optype == INSTR_TYPE_POINTER) {																// Pointer (16:32)
+		codegen_write_dword(codegen, get_opval(codegen, node->childs->childs->next, 4, 0));										// Write the right part
+		codegen_write_word(codegen, (uint16_t)get_opval(codegen, node->childs->childs, 2, 0));									// Write the left part
 	}
 	
 	return 1;

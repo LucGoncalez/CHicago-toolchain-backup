@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 14:40 BRT
-// Last edited on December 29 of 2018, at 22:28 BRT
+// Last edited on December 30 of 2018, at 23:27 BRT
 
 #include <arch.h>
 #include <lexer.h>
@@ -143,7 +143,7 @@ token_t *arch_lex(lexer_t *lexer, token_t *list, token_t *cur) {
 }
 
 node_t *arch_parse(parser_t *parser, node_t *cur) {
-	if (arch_current != NULL && arch_current->parse != NULL && parser != NULL && cur != NULL) {			// Check if the arguments are valid
+	if (arch_current != NULL && arch_current->parse != NULL && parser != NULL) {						// Check if the arguments are valid
 		return arch_current->parse(parser, cur);														// And redirect
 	}
 	

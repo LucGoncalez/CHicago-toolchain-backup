@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 14:38 BRT
-// Last edited on December 28 of 2018, at 11:46 BRT
+// Last edited on December 30 of 2018, at 23:36 BRT
 
 #include <arch.h>
 #include <stdio.h>
@@ -271,7 +271,7 @@ token_t *lexer_lex(lexer_t *lexer) {
 					   len++) ;
 			}
 			
-			cur->value = malloc(len + 1);																		// Alloc space for copying the number
+			cur->value = malloc((sign != -1 ? 1 : 0) + len + 1);												// Alloc space for copying the number
 			
 			if (cur->value == NULL) {
 				token_free_list(list);																			// Failed...
@@ -285,7 +285,7 @@ token_t *lexer_lex(lexer_t *lexer) {
 				strncpy(cur->value, &lexer->text[lexer->pos], len);												// Nope!
 			}
 			
-			cur->value[len] = '\0';																				// Add the NUL terminator at the end
+			cur->value[(sign != -1 ? 1 : 0) + len] = '\0';														// Add the NUL terminator at the end
 			
 			for (int i = 0; i < len; i++) {																		// Consume len bytes
 				lexer_consume(lexer);
