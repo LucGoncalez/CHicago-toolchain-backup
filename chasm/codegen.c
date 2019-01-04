@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 28 of 2018, at 17:15 BRT
-// Last edited on December 30 of 2018, at 01:05 BRT
+// Last edited on January 02 of 2019, at 15:03 BRT
 
 #include <arch.h>
 #include <stdio.h>
@@ -316,6 +316,12 @@ int codegen_gen(codegen_t *codegen) {
 					
 					codegen_write_qword(codegen, (uint64_t)num->value);											// Write!
 				}
+			} else if (node->childs->type == NODE_TYPE_STRING) {												// Add all the bytes from the string?
+				char *str = ((string_node_t*)node->childs)->value;												// Yes
+				
+				for (size_t i = 0; i < strlen(str); i++) {														// Write!
+					codegen_write_byte(codegen, str[i]);
+				}
 			}
 		} else if (node->type == NODE_TYPE_LABEL) {																// Create label?
 			codegen_label_t *lbl = codegen_get_label(codegen, ((label_node_t*)node)->name);						// Yes, first, let's make sure we're not redefining it
@@ -353,7 +359,7 @@ int codegen_gen(codegen_t *codegen) {
 			codegen_select_section(codegen, rel->sect);															// Yes!
 			
 			uintptr_t initial = codegen->current_section->size;													// Save the current pos
-			uintptr_t lstart = codegen_get_section_start(codegen, rel->sect);									// Get the section start
+			uintptr_t lstart = codegen_get_section_start(codegen, lbl->sect);									// Get the section start
 			
 			codegen->current_section->size = rel->loc;															// And let's go to the reloc position
 			

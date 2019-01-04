@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 17:37 BRT
-// Last edited on January 01 of 2019, at 15:37 BRT
+// Last edited on January 04 of 2019, at 16:09 BRT
 
 #include <arch.h>
 #include <inttypes.h>
@@ -19,28 +19,32 @@ static char *registers[30] = {
 	"cs", "ds", "es", "fs", "gs", "ss"
 };
 
+static char *sregs[6] = { "es", "cs", "ss", "ds", "fs", "gs" };
 static char *gregsb[8] = { "al", "cl", "dl", "bl", "ah", "ch", "dh", "bh" };
 static char *gregsw[8] = { "ax", "cx", "dx", "bx", "sp", "bp", "si", "di" };
 static char *gregsd[8] = { "eax", "ecx", "edx", "ebx", "esp", "ebp", "esi", "edi" };
 
-static char *mnemonics[158] = {
-	"aaa", "aad", "aam", "aas", "call", "cbw", "cwde", "clc", "cld", "cli",
-	"clts", "cmc", "cmpsb", "cmpsw", "cmpsd", "cwd", "cdq", "daa", "das",
-	"dec", "hlt", "idiv", "imul", "inc", "insb", "insw", "insd", "int3", "int",
-	"into", "iret", "iretw", "iretd", "ja", "jae", "jb", "jbe", "jc", "jcxz",
-	"jecxz", "je", "jz", "jg", "jge", "jl", "jle", "jna", "jnae", "jnb", "jnbe",
-	"jnc", "jne", "jng", "jnge", "jnl", "jnle", "jno", "jnp", "jns", "jnz", "jo",
-	"jp", "jpe", "jpo", "js", "jz", "jmp", "lahf", "leave", "lgdt", "lidt", "lldt",
-	"lmsw", "lodsb", "lodsw", "lodsd", "loop", "loope", "loopz", "loopne", "loopnz",
-	"ltr", "movsb", "movsw", "movsd", "neg", "nop", "not", "outsb", "outsw", "outsd",
-	"pop", "popa", "popaw", "popad", "popf", "popfw", "popfd", "push", "pusha",
-	"pushaw", "pushad", "pushf", "pushfw", "pushfd", "ret", "retf", "retfw", "retfd",
-	"sahf", "scasb", "scasw", "scasd", "seta", "setae", "setb", "setbe", "setc",
-	"sete", "setg", "setge", "setl", "setle", "setna", "setnae", "setnb", "setnbe",
-	"setnc", "setne", "setng", "setnge", "setnl", "setnle", "setno", "setnp", "setns",
-	"setnz", "seto", "setp", "setpe", "setpo", "sets", "setz", "sgdt", "sidt", "smsw",
-	"stc", "std", "sti", "stosb", "stosw", "stosd", "str", "verr", "verrw", "wait",
-	"xlatb", "xlat",
+static char *mnemonics[257] = {
+	"aaa", "aad", "aam", "aas", "adc", "adcb", "adcw", "adcd", "add", "addb", "addw", "addd",
+	"and", "andb", "andw", "andd", "arpl", "bound", "bsf", "bsr", "bt", "btw", "btd", "btc", "btcw",
+	"btcd", "btr", "btrw", "btrd", "bts", "btsw", "btsd", "call", "cbw", "cwde", "clc", "cld", "cli",
+	"clts", "cmc", "cmp", "cmpb", "cmpw", "cmpd", "cmpsb", "cmpsw", "cmpsd", "cwd", "cdq", "daa", "das",
+	"dec", "div", "enter", "hlt", "idiv", "imul", "imulw", "imuld", "in", "inc", "insb", "insw", "insd",
+	"int3", "int", "into", "iret", "iretw", "iretd", "ja", "jae", "jb", "jbe", "jc", "jcxz", "jecxz",
+	"je", "jz", "jg", "jge", "jl", "jle", "jna", "jnae", "jnb", "jnbe", "jnc", "jne", "jng", "jnge",
+	"jnl", "jnle", "jno", "jnp", "jns", "jnz", "jo", "jp", "jpe", "jpo", "js", "jz", "jmp", "lahf",
+	"lar", "lea", "leave", "lgdt", "lidt", "lds", "lss", "les", "lfs", "lgs", "lldt", "lmsw", "lodsb", "lodsw",
+	"lodsd", "loop", "loope", "loopz", "loopne", "loopnz", "lsl", "ltr", "mov", "movb", "movw", "movd", "movsb",
+	"movsw", "movsd", "movsxb", "movsxw", "movzxb", "movzxw", "mul", "neg", "nop", "not", "or", "orb", "orw", "ord",
+	"out", "outsb", "outsw", "outsd", "pop", "popa", "popaw", "popad", "popf" "popfw", "popfd", "push", "pusha", "pushaw",
+	"pushad", "pushf", "pushfw", "pushfd", "rclb", "rclw", "rcld", "rcrb", "rcrw", "rcrd", "rolb", "rolw", "rold", "rorb",
+	"rorw", "rord", "ret", "retf", "retfw", "retfd", "sahf", "salb", "salw", "sald", "sarb", "sarw", "sard", "shlb",
+	"shlw", "shld", "shrb", "shrw", "shrd", "sbb", "sbbb", "sbbw", "sbbd", "scasb", "scasw", "scasd",
+	"seta", "setae", "setb", "setbe", "setc", "sete", "setg", "setge", "setl", "setle", "setna", "setnae",
+	"setnb", "setnbe", "setnc", "setne", "setng", "setnge", "setnl", "setnle", "setno", "setnp", "setns",
+	"setnz", "seto", "setp", "setpe", "setpo", "sets", "setz", "sgdt", "sidt", "smsw", "stc", "std", "sti",
+	"stosb", "stosw", "stosd", "str", "sub", "subb", "subw", "subd", "test", "testb", "testw", "testd",
+	"verr", "verrw", "wait", "xchg", "xlatb", "xlat", "xor", "xorb", "xorw", "xord"
 };
 
 struct {
@@ -53,7 +57,7 @@ struct {
 	uint32_t args;
 	uint32_t arg1;
 	uint32_t arg2;
-} instructions[206] = {
+} instructions[503] = {
 	{ "aaa", 0x37, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
 	{ "aad", 0xD5, 0x0A, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
@@ -61,6 +65,82 @@ struct {
 	{ "aam", 0xD4, 0x0A, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
 	{ "aas", 0x3F, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "adc", 0x14, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB },
+	{ "adc", 0x15, -1, INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMW },
+	{ "adc", 0x15, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_IMMW },
+	{ "adcb", 0x80, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "adcw", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "adcd", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "adcw", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMW },
+	{ "adcd", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMD },
+	{ "adc", 0x10, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB },
+	{ "adc", 0x11, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW },
+	{ "adc", 0x11, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD },
+	{ "adc", 0x12, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM },
+	{ "adc", 0x13, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
+	{ "adc", 0x13, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
+	
+	{ "add", 0x04, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB },
+	{ "add", 0x05, -1, INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMW },
+	{ "add", 0x05, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_IMMW },
+	{ "addb", 0x80, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "addw", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "addd", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "addw", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMW },
+	{ "addd", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMD },
+	{ "add", 0x00, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB },
+	{ "add", 0x01, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW },
+	{ "add", 0x01, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD },
+	{ "add", 0x02, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM },
+	{ "add", 0x03, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
+	{ "add", 0x03, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
+	
+	{ "and", 0x24, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB },
+	{ "and", 0x25, -1, INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMW },
+	{ "and", 0x25, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_IMMW },
+	{ "andb", 0x80, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "andw", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "andd", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "andw", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMW },
+	{ "andd", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMD },
+	{ "and", 0x20, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB },
+	{ "and", 0x21, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW },
+	{ "and", 0x21, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD },
+	{ "and", 0x22, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM },
+	{ "and", 0x23, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
+	{ "and", 0x23, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
+	
+	{ "arpl", 0x63, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW },
+	
+	{ "bound", 0x62, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
+	{ "bound", 0x62, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
+	
+	{ "bsf", 0x0F, 0xBC, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
+	{ "bsr", 0x0F, 0xBC, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
+	
+	{ "bsr", 0x0F, 0xBD, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
+	{ "bsr", 0x0F, 0xBD, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
+	
+	{ "bt", 0x0F, 0xA3, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
+	{ "bt", 0x0F, 0xA3, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
+	{ "btw", 0x0F, 0xBA, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "btd", 0x0F, 0xBA, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	
+	{ "btc", 0x0F, 0xBB, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
+	{ "btc", 0x0F, 0xBB, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
+	{ "btcw", 0x0F, 0xBA, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "btcd", 0x0F, 0xBA, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	
+	{ "btr", 0x0F, 0xB3, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
+	{ "btr", 0x0F, 0xB3, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
+	{ "btrw", 0x0F, 0xBA, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 6, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "btrd", 0x0F, 0xBA, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 6, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	
+	{ "bts", 0x0F, 0xAB, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
+	{ "bts", 0x0F, 0xAB, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
+	{ "btsw", 0x0F, 0xBA, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "btsd", 0x0F, 0xBA, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
 	
 	{ "call", 0xE8, -1, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
 	{ "call", 0xFF, -1, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
@@ -79,6 +159,21 @@ struct {
 	
 	{ "cmc", 0xF5, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
+	{ "cmp", 0x3C, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB },
+	{ "cmp", 0x3D, -1, INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMW },
+	{ "cmp", 0x3D, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_IMMW },
+	{ "cmpb", 0x80, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "cmpw", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "cmpd", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "cmpw", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMW },
+	{ "cmpd", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMD },
+	{ "cmp", 0x38, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB },
+	{ "cmp", 0x39, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW },
+	{ "cmp", 0x39, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD },
+	{ "cmp", 0x3A, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM },
+	{ "cmp", 0x3B, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
+	{ "cmp", 0x3B, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
+	
 	{ "cmpsb", 0xA6, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "cmpsw", 0xA7, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "cmpsd", 0xA7, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
@@ -94,11 +189,34 @@ struct {
 	{ "dec", 0x48, -1, INSTR_TYPE_OPREGW, 1, -1, 1, INSTR_ARG_GREGW, INSTR_ARG_NONE },
 	{ "dec", 0x48, -1, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_GREGD, INSTR_ARG_NONE },
 	
+	{ "div", 0xF6, -1, INSTR_TYPE_MODRM, 0, 6, 2, INSTR_ARG_ACCUMB, INSTR_ARG_MODRM },
+	{ "div", 0xF7, -1, INSTR_TYPE_MODRM, 1, 6, 2, INSTR_ARG_ACCUMW, INSTR_ARG_MODRM },
+	{ "div", 0xF7, -1, INSTR_TYPE_MODRM, 0, 6, 2, INSTR_ARG_ACCUMD, INSTR_ARG_MODRM },
+	
+	{ "enter", 0xC8, -1, INSTR_TYPE_WORD | INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_IMMW, INSTR_ARG_IMMB },
+	
 	{ "hlt", 0xF4, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
 	{ "idiv", 0xF6, -1, INSTR_TYPE_MODRM, 0, 7, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "idiv", 0xF7, -1, INSTR_TYPE_MODRM, 1, 7, 2, INSTR_ARG_ACCUMW, INSTR_ARG_MODRM },
+	{ "idiv", 0xF7, -1, INSTR_TYPE_MODRM, 0, 7, 2, INSTR_ARG_ACCUMD, INSTR_ARG_MODRM },
 	
-	{ "imul", 0xF7, -1, INSTR_TYPE_MODRM, 0, 5, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "imulb", 0xF6, -1, INSTR_TYPE_MODRM, 0, 5, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "imulw", 0xF7, -1, INSTR_TYPE_MODRM, 0, 6, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "imuld", 0xF7, -1, INSTR_TYPE_MODRM, 0, 6, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "imul", 0x0F, 0xAF, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW },
+	{ "imul", 0x0F, 0xAF, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD },
+	{ "imul", 0x6B, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_IMMB },
+	{ "imul", 0x6B, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_IMMB },
+	{ "imul", 0x69, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_IMMW },
+	{ "imul", 0x69, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_IMMD },
+	
+	{ "in", 0xE4, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB },
+	{ "in", 0xE5, -1, INSTR_TYPE_BYTE, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMB },
+	{ "in", 0xE5, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_IMMB },
+	{ "in", 0xEC, -1, INSTR_TYPE_NONE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_DESTW },
+	{ "in", 0xED, -1, INSTR_TYPE_NONE, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_DESTW },
+	{ "in", 0xED, -1, INSTR_TYPE_NONE, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_DESTW },
 	
 	{ "inc", 0xFF, -1, INSTR_TYPE_MODRM, 0, 0, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	{ "inc", 0x40, -1, INSTR_TYPE_OPREGW, 1, -1, 1, INSTR_ARG_GREGW, INSTR_ARG_NONE },
@@ -180,17 +298,34 @@ struct {
 	{ "jpo", 0x0F, 0x8B, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
 	{ "js", 0x0F, 0x88, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
 	{ "jz", 0x0F, 0x84, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jmp", 0xE8, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "jmp", 0xEB, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
 	{ "jmp", 0xE9, -1, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
 	{ "jmp", 0xFF, -1, INSTR_TYPE_MODRM, 0, 4, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	{ "jmp", 0xEA, -1, INSTR_TYPE_POINTER, 0, -1, 1, INSTR_ARG_POINTER, INSTR_ARG_NONE },
 	
 	{ "lahf", 0x9F, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
+	{ "lar", 0x0F, 0x02, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
+	{ "lar", 0x0F, 0x02, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
+	
+	{ "lea", 0x8D, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
+	{ "lea", 0x8D, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
+	
 	{ "leave", 0xC9, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
 	{ "lgdt", 0x0F, 0x01, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	{ "lidt", 0x0F, 0x01, INSTR_TYPE_MODRM, 0, 3, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "lds", 0xC5, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
+	{ "lds", 0xC5, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
+	{ "lss", 0x0F, 0xB2, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
+	{ "lss", 0x0F, 0xB2, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
+	{ "lss", 0xC4, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
+	{ "lss", 0xC4, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
+	{ "lfs", 0x0F, 0xB4, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
+	{ "lfs", 0x0F, 0xB4, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
+	{ "lgs", 0x0F, 0xB5, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
+	{ "lgs", 0x0F, 0xB5, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
 	
 	{ "lldt", 0x0F, 0x00, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	
@@ -206,17 +341,75 @@ struct {
 	{ "loopne", 0xE0, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
 	{ "loopnz", 0xE0, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
 	
+	{ "lsl", 0x0F, 0x03, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
+	{ "lsl", 0x0F, 0x03, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
+	
 	{ "ltr", 0x0F, 0x00, INSTR_TYPE_MODRM, 0, 6, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "mov", 0x88, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB },
+	{ "mov", 0x89, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW },
+	{ "mov", 0x89, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD },
+	{ "mov", 0x8A, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM },
+	{ "mov", 0x8B, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
+	{ "mov", 0x8B, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
+	{ "mov", 0x8C, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_SREG },
+	{ "mov", 0x8E, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_SREG, INSTR_ARG_MODRM },
+	{ "mov", 0xA0, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_MOFFS },
+	{ "mov", 0xA1, -1, INSTR_TYPE_DWORD, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_MOFFS },
+	{ "mov", 0xA1, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_MOFFS },
+	{ "mov", 0xA2, -1, INSTR_TYPE_DWORD | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_MOFFS, INSTR_ARG_ACCUMB },
+	{ "mov", 0xA3, -1, INSTR_TYPE_DWORD | INSTR_TYPE_LEFT, 1, -1, 2, INSTR_ARG_MOFFS, INSTR_ARG_ACCUMW },
+	{ "mov", 0xA3, -1, INSTR_TYPE_DWORD | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_MOFFS, INSTR_ARG_ACCUMD },
+	{ "mov", 0xB0, -1, INSTR_TYPE_OPREGB | INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_IMMB },
+	{ "mov", 0xB8, -1, INSTR_TYPE_OPREGW | INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_IMMW },
+	{ "mov", 0xB8, -1, INSTR_TYPE_OPREGD | INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_IMMD },
+	{ "movb", 0xC6, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "movw", 0xC7, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMW },
+	{ "movd", 0xC7, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMD },
 	
 	{ "movsb", 0xA4, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "movsw", 0xA5, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "movsd", 0xA5, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "movsxb", 0x0F, 0xBE, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
+	{ "movsxb", 0x0F, 0xBE, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
+	{ "movsxw", 0x0F, 0xBF, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
+	
+	{ "movzxb", 0x0F, 0xB6, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
+	{ "movzxb", 0x0F, 0xB6, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
+	{ "movzxw", 0x0F, 0xB7, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
+	
+	{ "mul", 0xF6, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_ACCUMB, INSTR_ARG_MODRM },
+	{ "mul", 0xF7, -1, INSTR_TYPE_MODRM, 1, 4, 2, INSTR_ARG_ACCUMW, INSTR_ARG_MODRM },
+	{ "mul", 0xF7, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_ACCUMD, INSTR_ARG_MODRM },
 	
 	{ "neg", 0xF7, -1, INSTR_TYPE_MODRM, 0, 3, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	
 	{ "nop", 0x90, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
 	{ "not", 0xF6, -1, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "or", 0x0C, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB },
+	{ "or", 0x0D, -1, INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMW },
+	{ "or", 0x0D, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_IMMW },
+	{ "orb", 0x80, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "orw", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "ord", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "orw", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMW },
+	{ "ord", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMD },
+	{ "or", 0x08, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB },
+	{ "or", 0x09, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW },
+	{ "or", 0x09, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD },
+	{ "or", 0x0A, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM },
+	{ "or", 0x0B, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
+	{ "or", 0x0B, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
+	
+	{ "out", 0xE6, -1, INSTR_TYPE_BYTE | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_IMMB, INSTR_ARG_ACCUMB },
+	{ "out", 0xE7, -1, INSTR_TYPE_BYTE | INSTR_TYPE_LEFT, 1, -1, 2, INSTR_ARG_IMMB, INSTR_ARG_ACCUMW },
+	{ "out", 0xE7, -1, INSTR_TYPE_BYTE | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_IMMB, INSTR_ARG_ACCUMD },
+	{ "out", 0xEE, -1, INSTR_TYPE_NONE, 0, -1, 2, INSTR_ARG_DESTW, INSTR_ARG_ACCUMB },
+	{ "out", 0xEF, -1, INSTR_TYPE_NONE, 1, -1, 2, INSTR_ARG_DESTW, INSTR_ARG_ACCUMW },
+	{ "out", 0xEF, -1, INSTR_TYPE_NONE, 0, -1, 2, INSTR_ARG_DESTW, INSTR_ARG_ACCUMD },
 	
 	{ "outsb", 0x6E, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "outsw", 0x6F, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
@@ -245,6 +438,43 @@ struct {
 	{ "pushfw", 0x9C, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "pushfd", 0x9C, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
+	{ "rclb", 0xD0, -1, INSTR_TYPE_MODRM, 0, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
+	{ "rclb", 0xD2, -1, INSTR_TYPE_MODRM, 0, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
+	{ "rclb", 0xC0, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "rclw", 0xD1, -1, INSTR_TYPE_MODRM, 1, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
+	{ "rclw", 0xD3, -1, INSTR_TYPE_MODRM, 1, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
+	{ "rclw", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "rcld", 0xD1, -1, INSTR_TYPE_MODRM, 0, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
+	{ "rcld", 0xD3, -1, INSTR_TYPE_MODRM, 0, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
+	{ "rcld", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "rcrb", 0xD0, -1, INSTR_TYPE_MODRM, 0, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
+	{ "rcrb", 0xD2, -1, INSTR_TYPE_MODRM, 0, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
+	{ "rcrb", 0xC0, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "rcrw", 0xD1, -1, INSTR_TYPE_MODRM, 1, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
+	{ "rcrw", 0xD3, -1, INSTR_TYPE_MODRM, 1, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
+	{ "rcrw", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "rcrd", 0xD1, -1, INSTR_TYPE_MODRM, 0, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
+	{ "rcrd", 0xD3, -1, INSTR_TYPE_MODRM, 0, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
+	{ "rcrd", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "rolb", 0xD0, -1, INSTR_TYPE_MODRM, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
+	{ "rolb", 0xD2, -1, INSTR_TYPE_MODRM, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
+	{ "rolb", 0xC0, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "rolw", 0xD1, -1, INSTR_TYPE_MODRM, 1, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
+	{ "rolw", 0xD3, -1, INSTR_TYPE_MODRM, 1, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
+	{ "rolw", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "rold", 0xD1, -1, INSTR_TYPE_MODRM, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
+	{ "rold", 0xD3, -1, INSTR_TYPE_MODRM, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
+	{ "rold", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "rorb", 0xD0, -1, INSTR_TYPE_MODRM, 0, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
+	{ "rorb", 0xD2, -1, INSTR_TYPE_MODRM, 0, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
+	{ "rorb", 0xC0, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "rorw", 0xD1, -1, INSTR_TYPE_MODRM, 1, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
+	{ "rorw", 0xD3, -1, INSTR_TYPE_MODRM, 1, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
+	{ "rorw", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "rord", 0xD1, -1, INSTR_TYPE_MODRM, 0, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
+	{ "rord", 0xD3, -1, INSTR_TYPE_MODRM, 0, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
+	{ "rord", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	
 	{ "ret", 0xC3, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "ret", 0xC2, -1, INSTR_TYPE_WORD, 0, -1, 1, INSTR_ARG_IMMW, INSTR_ARG_NONE },
 	{ "retf", 0xCB, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
@@ -255,6 +485,58 @@ struct {
 	{ "retfd", 0xCA, -1, INSTR_TYPE_WORD, 0, -1, 1, INSTR_ARG_IMMW, INSTR_ARG_NONE },
 	
 	{ "sahf", 0x9E, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "salb", 0xD0, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
+	{ "salb", 0xD2, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
+	{ "salb", 0xC0, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "salw", 0xD1, -1, INSTR_TYPE_MODRM, 1, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
+	{ "salw", 0xD3, -1, INSTR_TYPE_MODRM, 1, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
+	{ "salw", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "sald", 0xD1, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
+	{ "sald", 0xD3, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
+	{ "sald", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "sarb", 0xD0, -1, INSTR_TYPE_MODRM, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
+	{ "sarb", 0xD2, -1, INSTR_TYPE_MODRM, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
+	{ "sarb", 0xC0, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "sarw", 0xD1, -1, INSTR_TYPE_MODRM, 1, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
+	{ "sarw", 0xD3, -1, INSTR_TYPE_MODRM, 1, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
+	{ "sarw", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "sard", 0xD1, -1, INSTR_TYPE_MODRM, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
+	{ "sard", 0xD3, -1, INSTR_TYPE_MODRM, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
+	{ "sard", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "shlb", 0xD0, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
+	{ "shlb", 0xD2, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
+	{ "shlb", 0xC0, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "shlw", 0xD1, -1, INSTR_TYPE_MODRM, 1, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
+	{ "shlw", 0xD3, -1, INSTR_TYPE_MODRM, 1, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
+	{ "shlw", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "shld", 0xD1, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
+	{ "shld", 0xD3, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
+	{ "shld", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "shrb", 0xD0, -1, INSTR_TYPE_MODRM, 0, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
+	{ "shrb", 0xD2, -1, INSTR_TYPE_MODRM, 0, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
+	{ "shrb", 0xC0, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "shrw", 0xD1, -1, INSTR_TYPE_MODRM, 1, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
+	{ "shrw", 0xD3, -1, INSTR_TYPE_MODRM, 1, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
+	{ "shrw", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "shrd", 0xD1, -1, INSTR_TYPE_MODRM, 0, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
+	{ "shrd", 0xD3, -1, INSTR_TYPE_MODRM, 0, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
+	{ "shrd", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	
+	{ "sbb", 0x1C, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB },
+	{ "sbb", 0x1D, -1, INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMW },
+	{ "sbb", 0x1D, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_IMMW },
+	{ "sbbb", 0x80, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "sbbw", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "sbbd", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "sbbw", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMW },
+	{ "sbbd", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMD },
+	{ "sbb", 0x18, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB },
+	{ "sbb", 0x19, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW },
+	{ "sbb", 0x19, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD },
+	{ "sbb", 0x1A, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM },
+	{ "sbb", 0x1B, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
+	{ "sbb", 0x1B, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
 	
 	{ "scasb", 0xAE, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "scasw", 0xAF, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
@@ -309,13 +591,64 @@ struct {
 	
 	{ "str", 0x0F, 0x00, INSTR_TYPE_MODRM, 0, 1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	
+	{ "sub", 0x2C, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB },
+	{ "sub", 0x2D, -1, INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMW },
+	{ "sub", 0x2D, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_IMMW },
+	{ "subb", 0x80, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "subw", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "subd", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "subw", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMW },
+	{ "subd", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMD },
+	{ "sub", 0x28, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB },
+	{ "sub", 0x29, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW },
+	{ "sub", 0x29, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD },
+	{ "sub", 0x2A, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM },
+	{ "sub", 0x2B, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
+	{ "sub", 0x2B, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
+	
+	{ "test", 0xA8, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB },
+	{ "test", 0xA9, -1, INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMW },
+	{ "test", 0xA9, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_IMMW },
+	{ "testb", 0xF6, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "testw", 0xF7, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMW },
+	{ "testd", 0xF7, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMD },
+	{ "testb", 0x84, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB },
+	{ "testw", 0x85, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW },
+	{ "testd", 0x85, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD },
+	
 	{ "verr", 0x0F, 0x00, INSTR_TYPE_MODRM, 0, 4, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	{ "verrw", 0x0F, 0x00, INSTR_TYPE_MODRM, 0, 5, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	
 	{ "wait", 0x9B, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
+	{ "xchg", 0x90, -1, INSTR_TYPE_OPREGW, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_GREGW },
+	{ "xchg", 0x90, -1, INSTR_TYPE_OPREGW | INSTR_TYPE_LEFT, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_ACCUMW },
+	{ "xchg", 0x90, -1, INSTR_TYPE_OPREGD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_GREGD },
+	{ "xchg", 0x90, -1, INSTR_TYPE_OPREGD | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_ACCUMD },
+	{ "xchg", 0x86, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB },
+	{ "xchg", 0x86, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM },
+	{ "xchg", 0x87, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW },
+	{ "xchg", 0x87, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
+	{ "xchg", 0x87, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD },
+	{ "xchg", 0x87, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
+	
 	{ "xlatb", 0xD7, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "xlat", 0xD7, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "xor", 0x34, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB },
+	{ "xor", 0x35, -1, INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMW },
+	{ "xor", 0x35, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_IMMW },
+	{ "xorb", 0x80, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 6, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "xorw", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 6, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "xord", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 6, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "xorw", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, 6, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMW },
+	{ "xord", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, 6, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMD },
+	{ "xor", 0x30, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB },
+	{ "xor", 0x31, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW },
+	{ "xor", 0x31, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD },
+	{ "xor", 0x32, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM },
+	{ "xor", 0x33, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
+	{ "xor", 0x33, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM }
 };
 
 static void x86_help(void) { }
@@ -363,16 +696,15 @@ static int x86_find_register(char *name) {
 static token_t *x86_lex(lexer_t *lexer, token_t *list, token_t *cur) {
 	if (lexer == NULL || list == NULL) {																						// Null pointer checks
 		return NULL;
-	} else if (lexer->text[lexer->pos] == ',' || lexer->text[lexer->pos] == '*' || lexer->text[lexer->pos] == '[' ||
-			   lexer->text[lexer->pos] == ']') {																				// Single character token?
+	} else if (lexer->text[lexer->pos] == '*' || lexer->text[lexer->pos] == '[' || lexer->text[lexer->pos] == ']') {			// Single character token?
 		cur = lexer_new_token(list, cur);																						// Yes, create a new token at the end of the list
 		
 		if (cur == NULL) {
 			return NULL;																										// Failed...
 		}
 		
-		cur->type = lexer->text[lexer->pos] == ',' ? TOK_TYPE_COMMA : (lexer->text[lexer->pos] == '*' ? TOK_TYPE_MUL :
-					(lexer->text[lexer->pos] == '[' ? TOK_TYPE_OBRAC : TOK_TYPE_CBRAC));										// Set the type
+		cur->type = lexer->text[lexer->pos] == '*' ? TOK_TYPE_MUL :
+					(lexer->text[lexer->pos] == '[' ? TOK_TYPE_OBRAC : TOK_TYPE_CBRAC);											// Set the type
 		cur->filename = lexer->filename;																						// Set the filename
 		cur->line = lexer->line;																								// Set the line
 		cur->col = lexer->col;																									// And the column
@@ -423,6 +755,8 @@ static node_t *parser_parse_pointer(parser_t *parser, node_t *cur, node_t *left)
 		left->next = parser_parse_identifier(parser, NULL);
 	} else if (parser_check_noval(parser, TOK_TYPE_NUMBER)) {																	// Number?
 		left->next = parser_parse_number(parser, NULL);
+	} else if (parser_check_noval(parser, TOK_TYPE_REGISTER)) {																	// Register?
+		left->next = parser_parse_register(parser, NULL);
 	}
 	
 	if (left->next == NULL) {
@@ -460,6 +794,25 @@ static node_t *parser_parse_address(parser_t *parser, node_t *cur) {
 		}
 	} else if (parser_check_noval(parser, TOK_TYPE_REGISTER)) {																	// Register?
 		val = parser_parse_register(parser, NULL);
+		
+		if (parser_accept_noval(parser, TOK_TYPE_COLON)) {																		// Pointer?
+			if (val != NULL) {																									// Failed?
+				int found = 0;																									// Nope, let's see if this is a valid segment register!
+
+				for (int i = 0; !found && i < 6; i++) {
+					if (!strcasecmp(((register_node_t*)val)->name, sregs[i])) {													// Found?
+						found = 1;																								// Yes!
+					}
+				}
+
+				if (!found) {
+					free(val);																									// Not found...
+					return NULL;
+				}
+			}
+			
+			val = parser_parse_pointer(parser, NULL, val);																		// Parse the pointer
+		}
 	}
 	
 	if (val == NULL) {
@@ -517,7 +870,7 @@ static node_t *parser_parse_address(parser_t *parser, node_t *cur) {
 }
 
 static int x86_find_mnemonic(char *name) {
-	for (int i = 0; i < 158; i++) {
+	for (int i = 0; i < 257; i++) {
 		if ((strlen(mnemonics[i]) == strlen(name)) && !strcasecmp(mnemonics[i], name)) {										// Found?
 			return 1;																											// Yes :)
 		}
@@ -533,7 +886,73 @@ static node_t *x86_parse(parser_t *parser, node_t *cur) {
 	
 	token_t *tok = parser->position;																							// Save the initial token (for the errors/warnings)
 	
-	if (parser_check_noval(parser, TOK_TYPE_IDENTIFIER) && x86_find_mnemonic(parser->position->value)) {						// Instruction?
+	if (parser_check_noval(parser, TOK_TYPE_IDENTIFIER) && !strcasecmp(parser->position->value, "rep")) {						// REP prefix?
+		parser_expect_noval(parser, TOK_TYPE_IDENTIFIER);
+		cur = parser_new_node(cur, sizeof(node_t));																				// Create the node
+		
+		if (cur == NULL) {
+			return (node_t*)-1;
+		}
+		
+		cur->type = NODE_TYPE_REP;																								// Set the type
+		
+		return cur;
+	} else if (parser_check_noval(parser, TOK_TYPE_IDENTIFIER) && !strcasecmp(parser->position->value, "repe")) {				// REPE prefix?
+		parser_expect_noval(parser, TOK_TYPE_IDENTIFIER);
+		cur = parser_new_node(cur, sizeof(node_t));																				// Create the node
+		
+		if (cur == NULL) {
+			return (node_t*)-1;
+		}
+		
+		cur->type = NODE_TYPE_REPE;																								// Set the type
+		
+		return cur;
+	} else if (parser_check_noval(parser, TOK_TYPE_IDENTIFIER) && !strcasecmp(parser->position->value, "repz")) {				// REPZ prefix?
+		parser_expect_noval(parser, TOK_TYPE_IDENTIFIER);
+		cur = parser_new_node(cur, sizeof(node_t));																				// Create the node
+		
+		if (cur == NULL) {
+			return (node_t*)-1;
+		}
+		
+		cur->type = NODE_TYPE_REPE;																								// Set the type
+		
+		return cur;
+	} else if (parser_check_noval(parser, TOK_TYPE_IDENTIFIER) && !strcasecmp(parser->position->value, "lock")) {				// LOCK prefix?
+		parser_expect_noval(parser, TOK_TYPE_IDENTIFIER);
+		cur = parser_new_node(cur, sizeof(node_t));																				// Create the node
+		
+		if (cur == NULL) {
+			return (node_t*)-1;
+		}
+		
+		cur->type = NODE_TYPE_LOCK;																								// Set the type
+		
+		return cur;
+	} else if (parser_check_noval(parser, TOK_TYPE_IDENTIFIER) && !strcasecmp(parser->position->value, "repne")) {				// REPNE prefix?
+		parser_expect_noval(parser, TOK_TYPE_IDENTIFIER);
+		cur = parser_new_node(cur, sizeof(node_t));																				// Create the node
+		
+		if (cur == NULL) {
+			return (node_t*)-1;
+		}
+		
+		cur->type = NODE_TYPE_REPNE;																							// Set the type
+		
+		return cur;
+	} else if (parser_check_noval(parser, TOK_TYPE_IDENTIFIER) && !strcasecmp(parser->position->value, "repnz")) {				// REPNZ prefix?
+		parser_expect_noval(parser, TOK_TYPE_IDENTIFIER);
+		cur = parser_new_node(cur, sizeof(node_t));																				// Create the node
+		
+		if (cur == NULL) {
+			return (node_t*)-1;
+		}
+		
+		cur->type = NODE_TYPE_REPNE;																							// Set the type
+		
+		return cur;
+	} else if (parser_check_noval(parser, TOK_TYPE_IDENTIFIER) && x86_find_mnemonic(parser->position->value)) {					// Instruction?
 		char *name = parser_expect_noval(parser, TOK_TYPE_IDENTIFIER)->value;													// Yes, save the name
 		node_t *args = NULL;
 		
@@ -554,7 +973,7 @@ start:		if (parser_check_noval(parser, TOK_TYPE_IDENTIFIER)) {																//
 				if (parser_accept_noval(parser, TOK_TYPE_COLON)) {																// Pointer?
 					args = parser_parse_pointer(parser, args, arg);																// Yes
 				} else if (args != NULL) {																						// Nope, first op?
-					args = arg;																									// Nope
+					args->next = arg;																							// Nope
 				} else {
 					args = arg;																									// Yes
 				}
@@ -568,7 +987,7 @@ start:		if (parser_check_noval(parser, TOK_TYPE_IDENTIFIER)) {																//
 				printf("%s: %d: %d: invalid argument\n", tok->filename, tok->line, tok->col);									// Invalid, return -1 (error)
 				
 				if (args != NULL) {
-					node_rewind_list(args);
+					args = node_rewind_list(args);
 					node_free_list(args);
 				}
 				
@@ -579,6 +998,7 @@ start:		if (parser_check_noval(parser, TOK_TYPE_IDENTIFIER)) {																//
 				goto start;																										// Yes, go back to the start!
 			}
 			
+			args = node_rewind_list(args);																						// Rewind the arg list
 			parser_expect_noval(parser, TOK_TYPE_EOS);																			// Now we MUST have a EOS
 		}
 		
@@ -586,7 +1006,7 @@ start:		if (parser_check_noval(parser, TOK_TYPE_IDENTIFIER)) {																//
 		
 		if (cur == NULL) {
 			if (args != NULL) {																									// Failed, return -1 (error)
-				node_rewind_list(args);
+				args = node_rewind_list(args);
 				node_free_list(args);
 			}
 			
@@ -614,12 +1034,14 @@ static uint32_t count_childs(node_t *node) {
 static int get_optype(node_t *node) {
 	int ret = 0;
 	
-	if (node->type == NODE_TYPE_IDENTIFIER) {																					// Identifier (symbol name without the brackets), for now, always 32 bits
-		ret |= INSTR_ARG_IMMD;
+	if (node->type == NODE_TYPE_IDENTIFIER) {																					// Identifier (symbol name without the brackets)
+		ret |= INSTR_ARG_IMMB | INSTR_ARG_IMMW | INSTR_ARG_IMMD;
 	} else if (node->type == NODE_TYPE_NUMBER) {																				// Number
 		uintmax_t val = ((number_node_t*)node)->value;																			// Get the value
 		
-		if (val <= UINT8_MAX) {																									// Byte
+		if (val == 1) {																											// Vone
+			ret |= INSTR_ARG_VONE | INSTR_ARG_IMMB | INSTR_ARG_IMMW | INSTR_ARG_IMMD;
+		} else if (val <= UINT8_MAX) {																							// Byte
 			ret |= INSTR_ARG_IMMB | INSTR_ARG_IMMW | INSTR_ARG_IMMD;
 		} else if (val <= UINT16_MAX) {																							// Word
 			ret |= INSTR_ARG_IMMW | INSTR_ARG_IMMD;
@@ -629,6 +1051,35 @@ static int get_optype(node_t *node) {
 	} else if (node->type == NODE_TYPE_REGISTER) {																				// Register
 		char *name = ((register_node_t*)node)->name;
 		int found = 0;
+		
+		if (!strcasecmp(name, "eax")) {																							// Accum for dwords?
+			ret |= (INSTR_ARG_ACCUMD | INSTR_ARG_GREGD);																		// Yes!
+			found = 1;
+		} else if (!strcasecmp(name, "ax")) {																					// Accum for words?
+			ret |= (INSTR_ARG_ACCUMW | INSTR_ARG_GREGW);																		// Yes!
+			found = 1;
+		} else if (!strcasecmp(name, "al")) {																					// Accum for bytes?
+			ret |= (INSTR_ARG_ACCUMB | INSTR_ARG_GREGB);																		// Yes!
+			found = 1;
+		} else if (!strcasecmp(name, "ecx")) {																					// Counter for dwords?
+			ret |= (INSTR_ARG_COUNTD | INSTR_ARG_GREGD);																		// Yes!
+			found = 1;
+		} else if (!strcasecmp(name, "cx")) {																					// Counter for words?
+			ret |= (INSTR_ARG_COUNTW | INSTR_ARG_GREGW);																		// Yes!
+			found = 1;
+		} else if (!strcasecmp(name, "cl")) {																					// Counter for bytes?
+			ret |= (INSTR_ARG_COUNTB | INSTR_ARG_GREGB);																		// Yes!
+			found = 1;
+		} else if (!strcasecmp(name, "edx")) {																					// Dest for dwords?
+			ret |= (INSTR_ARG_DESTD | INSTR_ARG_GREGD);																			// Yes!
+			found = 1;
+		} else if (!strcasecmp(name, "dx")) {																					// Dest for words?
+			ret |= (INSTR_ARG_DESTW | INSTR_ARG_GREGW);																			// Yes!
+			found = 1;
+		} else if (!strcasecmp(name, "dl")) {																					// Dest for bytes?
+			ret |= (INSTR_ARG_COUNTB | INSTR_ARG_GREGB);																		// Yes!
+			found = 1;
+		}
 		
 		for (int i = 0; !found && i < 8; i++) {																					// First, check if it is a 32-bits register
 			if (!strcasecmp(name, registers[i])) {
@@ -650,11 +1101,19 @@ static int get_optype(node_t *node) {
 				found = 1;
 			}
 		}
+		
+		for (int i = 24; !found && i < 30; i++) {																				// Or a segment register
+			if (!strcasecmp(name, registers[i])) {
+				ret |= INSTR_ARG_SREG;
+				found = 1;
+			}
+		}
 	} else if (node->type == NODE_TYPE_ADDRESS) {																				// Identifier, number or register with the brackets
-		if (node->childs->type == NODE_TYPE_REGISTER) {																			// Register?
+		if (node->childs->type == NODE_TYPE_REGISTER || (node->childs->type == NODE_TYPE_POINTER &&
+			node->childs->childs->next->type == NODE_TYPE_REGISTER)) {															// Register?
 			ret |= INSTR_ARG_MODRM_REG;
 		} else {
-			ret |= INSTR_ARG_MODRM_ADDR;																						// Identifier/number?
+			ret |= INSTR_ARG_MODRM_ADDR | INSTR_ARG_MOFFS;																		// Identifier/number?
 		}
 		
 		if (((address_node_t*)node)->have_disp) {																				// We have the displacement?
@@ -680,9 +1139,21 @@ static uint32_t get_opval(codegen_t *codegen, node_t *node, int size, int rel) {
 		codegen_add_relocation(codegen, ((identifier_node_t*)node)->value, sect->name, size, sect->size, -inc);					// Yes, add relocation
 	} else if (node->type == NODE_TYPE_NUMBER) {																				// Number?
 		ret = (uint32_t)(((number_node_t*)node)->value) - inc;																	// Yes
+	} else if (node->type == NODE_TYPE_POINTER) {																				// Pointer?
+		return get_opval(codegen, node->childs->next, size, rel);																// Yes
 	}
 	
 	return ret;
+}
+
+static int get_sreg(char *name) {
+	for (int i = 0; i < 6; i++) {																								// Search!
+		if (!strcasecmp(name, sregs[i])) {																						// Found?
+			return i;																											// Yes!
+		}
+	}
+	
+	return 0;
 }
 
 static int get_gregb(char *name) {
@@ -702,7 +1173,7 @@ static int get_gregw(char *name) {
 		}
 	}
 	
-	return 0;
+	return get_gregb(name);																										// Maybe it's a 8-bits one
 }
 
 static int get_gregd(char *name) {
@@ -712,12 +1183,103 @@ static int get_gregd(char *name) {
 		}
 	}
 	
-	return 0;
+	return get_gregw(name);																										// Maybe it's a 16-bits one
+}
+
+static void x86_write_segover(codegen_t *codegen, node_t *n) {
+	if (n->type != NODE_TYPE_POINTER) {																							// Segment override?
+		return;																													// Nope
+	} else if (!strcasecmp(((register_node_t*)n->childs)->name, "cs")) {														// CS override
+		codegen_write_byte(codegen, 0x2E);
+	} else if (!strcasecmp(((register_node_t*)n->childs)->name, "ds")) {														// DS override
+		codegen_write_byte(codegen, 0x3E);
+	} else if (!strcasecmp(((register_node_t*)n->childs)->name, "es")) {														// ES override
+		codegen_write_byte(codegen, 0x26);
+	} else if (!strcasecmp(((register_node_t*)n->childs)->name, "fs")) {														// FS override
+		codegen_write_byte(codegen, 0x64);
+	} else if (!strcasecmp(((register_node_t*)n->childs)->name, "gs")) {														// GS override
+		codegen_write_byte(codegen, 0x65);
+	} else if (!strcasecmp(((register_node_t*)n->childs)->name, "ss")) {														// SS override
+		codegen_write_byte(codegen, 0x36);
+	}
+}
+
+static int x86_write_modrm(codegen_t *codegen, int ex, int reg, int op, node_t *n) {
+	uint8_t ext = (uint8_t)(ex != -1 ? ex << 3 : 0) | (uint8_t)(reg != -1 ? reg << 3 : 0);										// First, get the "extension" that some instructions use
+	int ptr = 0;
+	
+	if (n->childs != NULL && n->childs->type == NODE_TYPE_POINTER) {															// Pointer?
+		ptr = 1;																												// Yes, get the offset!
+		if (op == (INSTR_ARG_MODRM_REG | INSTR_ARG_MODRM_DISP)) {
+			n->childs = n->childs->childs->next;
+		} else {
+			n = n->childs->childs->next;
+		}
+	}
+	
+	if (op != (INSTR_ARG_MODRM_REG | INSTR_ARG_MODRM_DISP)) {
+		n = !ptr && !(op & (INSTR_ARG_SREG | INSTR_ARG_GREGB | INSTR_ARG_GREGW | INSTR_ARG_GREGD)) ? n->childs : n;
+	}
+	
+	if (op == (INSTR_ARG_MODRM_ADDR | INSTR_ARG_MOFFS)) {																		// Just a number/identifier in the brackets?
+		codegen_write_byte(codegen, ext | 0x05);																				// Yes, write the modr/m byte
+		codegen_write_dword(codegen, get_opval(codegen, n, 4, 0));																// And the value
+	} else if (op & (INSTR_ARG_GREGB | INSTR_ARG_GREGW | INSTR_ARG_GREGD)) {													// Just a register (without the brackets?
+		codegen_write_byte(codegen, ext | get_gregd(((register_node_t*)n)->name) | 0xC0);										// Yes, write the modr/m byte
+	} else if (op & INSTR_ARG_SREG) {																							// Segment register?
+		codegen_write_byte(codegen, ext | (get_sreg(((register_node_t*)n)->name) << 3) | 0xC0);									// Yes, write the modr/m byte
+	} else if (op == INSTR_ARG_MODRM_REG) {																						// 32-bits register?
+		if (!strcasecmp(((register_node_t*)n)->name, "ebp")) {																	// Yes, write the modr/m byte, it would be ext | 0x05
+			codegen_write_word(codegen, 0x4500);																				// Yes, fix that
+		} else {
+			codegen_write_byte(codegen, ext | get_gregd(((register_node_t*)n)->name));											// Nope!
+		}
+		
+		if (!strcasecmp(((register_node_t*)n)->name, "esp")) {																	// modr/m = ext | 0x04?
+			codegen_write_byte(codegen, 0x24);																					// Yes, fix!
+		}
+	} else if (op == (INSTR_ARG_MODRM_REG | INSTR_ARG_MODRM_DISP)) {															// 32-bits register + displacement?
+		uint32_t disp = ((address_node_t*)n)->disp;																				// Get the displacement
+		uint8_t dshft = 0x80;
+		
+		if (((int32_t)disp <= INT8_MAX) || ((int32_t)disp >= INT8_MIN)) {														// 8-bits disp?
+			dshft = 0x40;																										// Yeah
+		}
+		
+		if (!strcasecmp(((register_node_t*)n->childs)->name, "ebp")) {															// Yes, write the modr/m byte, it would be ext | 0x05
+			codegen_write_word(codegen, 0x4500 | dshft);																		// Yes, fix that
+		} else {
+			codegen_write_byte(codegen, ext | get_gregd(((register_node_t*)n->childs)->name) | dshft);							// Nope!
+		}
+		
+		if (!strcasecmp(((register_node_t*)n->childs)->name, "esp")) {															// modr/m = ext | 0x04?
+			codegen_write_byte(codegen, 0x24);																					// Yes, fix!
+		}
+		
+		if (dshft == 0x40) {																									// 8-bits disp?
+			codegen_write_byte(codegen, (uint8_t)disp);																			// Yes
+		} else {
+			codegen_write_dword(codegen, disp);																					// 32-bits disp
+		}
+	} else {
+		return 0;																												// Unsupported
+	}
+	
+	return 1;
 }
 
 static int x86_gen(codegen_t *codegen, node_t *node) {
 	if (codegen == NULL || node == NULL) {																						// Null pointer check
-		return 0;	
+		return 0;
+	} else if (node->type == NODE_TYPE_REP || node->type == NODE_TYPE_REPE) {													// REP/REPE/REPZ?
+		codegen_write_byte(codegen, 0xF3);																						// Yes :)
+		return 1;
+	} else if (node->type == NODE_TYPE_LOCK) {																					// LOCK?
+		codegen_write_byte(codegen, 0xF0);																						// Yes :)
+		return 1;
+	} else if (node->type == NODE_TYPE_REPNE) {																					// REPNE/REPNZ?
+		codegen_write_byte(codegen, 0xF2);																						// Yes :)
+		return 1;
 	} else if (node->type != NODE_TYPE_INSTRUCTION) {																			// Our node?
 		return 0;																												// Nope
 	}
@@ -735,14 +1297,17 @@ static int x86_gen(codegen_t *codegen, node_t *node) {
 	int op1 = 0;
 	int op2 = 0;
 	
-	if (ops > 1) {																												// Too many args (> 2)?
+	if (ops > 2) {																												// Too many args (> 2)?
 		printf("too many operands to the instruction '%s'\n", inod->name);														// ...
 		return -1;
 	} else if (ops == 1) {
 		op1 = get_optype(node->childs);																							// Get the optype from the first operand
+	} else if (ops == 2) {
+		op1 = get_optype(node->childs);																							// Get the optype from the first operand
+		op2 = get_optype(node->childs->next);																					// Get the optype from the second operand
 	}
 	
-	for (; instc < 206; instc++) {																								// Let's try to find this instruction!
+	for (; instc < 503; instc++) {																								// Let's try to find this instruction!
 		if ((strlen(instructions[instc].name) != strlen(inod->name)) || strcasecmp(instructions[instc].name, inod->name)) {		// Same name?
 			continue;																											// Nope
 		} else {
@@ -757,19 +1322,19 @@ static int x86_gen(codegen_t *codegen, node_t *node) {
 			continue;
 		}
 		
-		found = 1;																												// Ok, we found it!
-		
 		if (ops == 0) {
 			inst = instc;
-		} else if (ops >= 1 && instructions[instc].arg1 - (op1 & instructions[instc].arg1) >= bestop1) {						// Best one?
+		} else if ((ops >= 1 && instructions[instc].arg1 - (op1 & instructions[instc].arg1) < bestop1) || !found) {				// Best one?
 			inst = instc;																										// Yes
 			bestop1 = instructions[instc].arg1 - (op1 & instructions[instc].arg1);
 			bestop2 = instructions[instc].arg2 - (op2 & instructions[instc].arg2);
-		} else if (ops >= 2 && instructions[instc].arg2 - (op2 & instructions[instc].arg2) >= bestop2) {						// Best one?
+		} else if ((ops >= 2 && instructions[instc].arg2 - (op2 & instructions[instc].arg2) < bestop2) || !found) {				// Best one?
 			inst = instc;																										// Yes
 			bestop1 = instructions[instc].arg1 - (op1 & instructions[instc].arg1);
 			bestop2 = instructions[instc].arg2 - (op2 & instructions[instc].arg2);
 		}
+		
+		found = 1;
 	}
 	
 	if (!found && exists) {																										// Invalid operands?
@@ -780,17 +1345,27 @@ static int x86_gen(codegen_t *codegen, node_t *node) {
 		return -1;
 	}
 	
-	
 	if (instructions[inst].alt_addr) {																							// Write the address size override?
 		codegen_write_byte(codegen, 0x66);																						// Yes
 	}
 	
-	if (instructions[inst].optype == INSTR_TYPE_OPREGB) {																		// Add the register to the opcode? (+rb)
-		opcode = instructions[inst].opcode + get_gregb(((register_node_t*)node->childs)->name);
-	} else if (instructions[inst].optype == INSTR_TYPE_OPREGW) {																// Add the register to the opcode? (+rw)
-		opcode = instructions[inst].opcode + get_gregw(((register_node_t*)node->childs)->name);
-	} else if (instructions[inst].optype == INSTR_TYPE_OPREGD) {																// Add the register to the opcode? (+rd)
-		opcode = instructions[inst].opcode + get_gregd(((register_node_t*)node->childs)->name);
+	if (node->childs != NULL && node->childs->type == NODE_TYPE_ADDRESS) {														// Let's see if we have a segment override in the first op
+		x86_write_segover(codegen, node->childs->childs);																		// Ok!
+	}
+	
+	if (node->childs != NULL && node->childs->next != NULL && node->childs->next->type == NODE_TYPE_ADDRESS) {					// Let's see if the second one have!
+		x86_write_segover(codegen, node->childs->next->childs);																	// Ok!
+	}
+	
+	if (instructions[inst].optype & INSTR_TYPE_OPREGB) {																		// Add the register to the opcode? (+rb)
+		node_t *n = ops == 2 && (instructions[inst].optype & INSTR_TYPE_LEFT) ? node->childs->next : node->childs;
+		opcode = instructions[inst].opcode + get_gregb(((register_node_t*)n)->name);
+	} else if (instructions[inst].optype & INSTR_TYPE_OPREGW) {																	// Add the register to the opcode? (+rw)
+		node_t *n = ops == 2 && (instructions[inst].optype & INSTR_TYPE_LEFT) ? node->childs->next : node->childs;
+		opcode = instructions[inst].opcode + get_gregw(((register_node_t*)n)->name);
+	} else if (instructions[inst].optype & INSTR_TYPE_OPREGD) {																	// Add the register to the opcode? (+rd)
+		node_t *n = ops == 2 && (instructions[inst].optype & INSTR_TYPE_LEFT) ? node->childs->next : node->childs;
+		opcode = instructions[inst].opcode + get_gregd(((register_node_t*)n)->name);
 	} else {																													// Just the opcode
 		opcode = instructions[inst].opcode;
 	}
@@ -801,64 +1376,97 @@ static int x86_gen(codegen_t *codegen, node_t *node) {
 		codegen_write_byte(codegen, instructions[inst].postop);																	// Yes
 	}
 	
-	if (instructions[inst].optype == INSTR_TYPE_RELB) {																			// 1 bytes after the opcode, but the value it's relative to the end of the instr, not absolute
-		codegen_write_byte(codegen, get_opval(codegen, node->childs, 1, 1));
-	} else if (instructions[inst].optype == INSTR_TYPE_RELW) {																	// 2 bytes after the opcode, but the value it's relative to the end of the instr, not absolute
-		codegen_write_dword(codegen, get_opval(codegen, node->childs, 2, 1));
-	} else if (instructions[inst].optype == INSTR_TYPE_RELD) {																	// 4 bytes after the opcode, but the value it's relative to the end of the instr, not absolute
-		codegen_write_dword(codegen, get_opval(codegen, node->childs, 4, 1));
-	} else if (instructions[inst].optype == INSTR_TYPE_BYTE) {																	// 1 byte after the opcode
-		codegen_write_byte(codegen, (uint8_t)get_opval(codegen, node->childs, 1, 0));
-	} else if (instructions[inst].optype == INSTR_TYPE_WORD) {																	// 2 byte after the opcode
-		codegen_write_word(codegen, (uint16_t)get_opval(codegen, node->childs, 2, 0));
-	} else if (instructions[inst].optype == INSTR_TYPE_DWORD) {																	// 4 byte after the opcode
-		codegen_write_dword(codegen, get_opval(codegen, node->childs, 4, 0));
-	} else if (instructions[inst].optype == INSTR_TYPE_MODRM) {																	// ModR/M
-		uint8_t ext = (uint8_t)(instructions[inst].extension != -1 ? instructions[inst].extension << 3 : 0);					// First, get the "extension" that some instructions use
+	if (instructions[inst].optype & INSTR_TYPE_RELB) {																			// 1 bytes after the opcode, but the value it's relative to the end of the instr, not absolute
+		codegen_write_byte(codegen, get_opval(codegen, ops == 2 ? node->childs->next : node->childs, 1, 1));
+	} else if (instructions[inst].optype & INSTR_TYPE_RELW) {																	// 2 bytes after the opcode, but the value it's relative to the end of the instr, not absolute
+		codegen_write_dword(codegen, get_opval(codegen, ops == 2 ? node->childs->next : node->childs, 2, 1));
+	} else if (instructions[inst].optype & INSTR_TYPE_RELD) {																	// 4 bytes after the opcode, but the value it's relative to the end of the instr, not absolute
+		codegen_write_dword(codegen, get_opval(codegen, ops == 2 ? node->childs->next : node->childs, 4, 1));
+	} else if (instructions[inst].optype == (INSTR_TYPE_WORD | INSTR_TYPE_BYTE)) {												// 3 bytes after the opcode
+		codegen_write_word(codegen, (uint16_t)get_opval(codegen, node->childs, 2, 0));											// Write!
+		codegen_write_byte(codegen, (uint8_t)get_opval(codegen, node->childs->next, 1, 0));
+	} else if (instructions[inst].optype & INSTR_TYPE_BYTE && !(instructions[inst].optype & INSTR_TYPE_MODRM)) {				// 1 byte after the opcode
+		node_t *args = ops == 2 && !(instructions[inst].optype & INSTR_TYPE_LEFT) ? node->childs->next : node->childs;
 		
-		if (op1 == INSTR_ARG_MODRM_ADDR) {																						// Just a number/identifier in the brackets?
-			codegen_write_byte(codegen, ext | 0x05);																			// Yes, write the modr/m byte
-			codegen_write_dword(codegen, get_opval(codegen, node->childs->childs, 4, 0));										// And the value
-		} else if (op1 == INSTR_ARG_MODRM_REG) {																				// 32-bits register?
-			if (!strcasecmp(((register_node_t*)node->childs->childs)->name, "ebp")) {											// Yes, write the modr/m byte, it would be ext | 0x05
-				codegen_write_word(codegen, 0x4500);																			// Yes, fix that
-			} else {
-				codegen_write_byte(codegen, ext | get_gregd(((register_node_t*)node->childs->childs)->name));					// Nope!
-			}
-			
-			if (!strcasecmp(((register_node_t*)node->childs->childs)->name, "esp")) {											// modr/m = ext | 0x04?
-				codegen_write_byte(codegen, 0x24);																				// Yes, fix!
-			}
-		} else if (op1 == (INSTR_ARG_MODRM_REG | INSTR_ARG_MODRM_DISP)) {														// 32-bits register + displacement?
-			uint32_t disp = ((address_node_t*)node->childs)->disp;																// Get the displacement
-			uint8_t dshft = 0x80;
-			
-			if (((int32_t)disp <= INT8_MAX) || ((int32_t)disp >= INT8_MIN)) {													// 8-bits disp?
-				dshft = 0x40;																									// Yeah
-			}
-			
-			if (!strcasecmp(((register_node_t*)node->childs->childs)->name, "ebp")) {											// Yes, write the modr/m byte, it would be ext | 0x05
-				codegen_write_word(codegen, 0x4500 | dshft);																	// Yes, fix that
-			} else {
-				codegen_write_byte(codegen, ext | get_gregd(((register_node_t*)node->childs->childs)->name) | dshft);			// Nope!
-			}
-			
-			if (!strcasecmp(((register_node_t*)node->childs->childs)->name, "esp")) {											// modr/m = ext | 0x04?
-				codegen_write_byte(codegen, 0x24);																				// Yes, fix!
-			}
-			
-			if (dshft == 0x40) {																								// 8-bits disp?
-				codegen_write_byte(codegen, (uint8_t)disp);																		// Yes
-			} else {
-				codegen_write_dword(codegen, disp);																				// 32-bits disp
-			}
+		if (args->type == NODE_TYPE_ADDRESS) {																					// Moffs?
+			codegen_write_byte(codegen, (uint8_t)get_opval(codegen, args->childs, 1, 0));										// Yeah!
 		} else {
-			printf("invalid operands to the instruction '%s'\n", inod->name);													// Unsupported for now...
-			return -1;
+			codegen_write_byte(codegen, (uint8_t)get_opval(codegen, args, 1, 0));												// Nope
+		}
+	} else if (instructions[inst].optype & INSTR_TYPE_WORD && !(instructions[inst].optype & INSTR_TYPE_MODRM)) {				// 2 byte after the opcode
+		node_t *args = ops == 2 && !(instructions[inst].optype & INSTR_TYPE_LEFT) ? node->childs->next : node->childs;
+		
+		if (args->type == NODE_TYPE_ADDRESS) {																					// Moffs?
+			codegen_write_word(codegen, (uint16_t)get_opval(codegen, args->childs, 2, 0));										// Yeah!
+		} else {
+			codegen_write_word(codegen, (uint16_t)get_opval(codegen, args, 2, 0));												// Nope
+		}
+	} else if (instructions[inst].optype & INSTR_TYPE_DWORD && !(instructions[inst].optype & INSTR_TYPE_MODRM)) {				// 4 byte after the opcode
+		node_t *args = ops == 2 && !(instructions[inst].optype & INSTR_TYPE_LEFT) ? node->childs->next : node->childs;
+		
+		if (args->type == NODE_TYPE_ADDRESS) {																					// Moffs?
+			codegen_write_dword(codegen, get_opval(codegen, args->childs, 4, 0));												// Yeah!
+		} else {
+			codegen_write_dword(codegen, get_opval(codegen, args, 4, 0));														// Nope
+		}
+	} else if ((instructions[inst].optype & (INSTR_TYPE_MODRM | INSTR_TYPE_BYTE)) == (INSTR_TYPE_MODRM | INSTR_TYPE_BYTE)) {	// ModR/M + Byte
+		int op = instructions[inst].optype & INSTR_TYPE_LEFT ? op2 : op1;
+		node_t *n1 = ops == 2 && !(instructions[inst].optype & INSTR_TYPE_LEFT) ? node->childs : node->childs->next;
+		node_t *n2 = ops == 2 && !(instructions[inst].optype & INSTR_TYPE_LEFT) ? node->childs->next : node->childs;
+		
+		if (!x86_write_modrm(codegen, instructions[inst].extension, -1, op, n1)) {												// Write the ModR/M
+			printf("invalid operands to the instruction '%s'\n", inod->name);													// Failed :(
+			return 1;
+		}
+		
+		codegen_write_byte(codegen, (uint8_t)get_opval(codegen, n2, 1, 0));														// Write the byte
+	} else if ((instructions[inst].optype & (INSTR_TYPE_MODRM | INSTR_TYPE_WORD)) == (INSTR_TYPE_MODRM | INSTR_TYPE_WORD)) {	// ModR/M + Word
+		int op = instructions[inst].optype & INSTR_TYPE_LEFT ? op2 : op1;
+		node_t *n1 = ops == 2 && !(instructions[inst].optype & INSTR_TYPE_LEFT) ? node->childs : node->childs->next;
+		node_t *n2 = ops == 2 && !(instructions[inst].optype & INSTR_TYPE_LEFT) ? node->childs->next : node->childs;
+		
+		if (!x86_write_modrm(codegen, instructions[inst].extension, -1, op, n1)) {												// Write the ModR/M
+			printf("invalid operands to the instruction '%s'\n", inod->name);													// Failed :(
+			return 1;
+		}
+		
+		codegen_write_word(codegen, (uint16_t)get_opval(codegen, n2, 2, 0));													// Write the word
+	} else if ((instructions[inst].optype & (INSTR_TYPE_MODRM | INSTR_TYPE_DWORD)) == (INSTR_TYPE_MODRM | INSTR_TYPE_DWORD)) {	// ModR/M + DWord
+		int op = instructions[inst].optype & INSTR_TYPE_LEFT ? op2 : op1;
+		node_t *n1 = ops == 2 && !(instructions[inst].optype & INSTR_TYPE_LEFT) ? node->childs : node->childs->next;
+		node_t *n2 = ops == 2 && !(instructions[inst].optype & INSTR_TYPE_LEFT) ? node->childs->next : node->childs;
+		
+		if (!x86_write_modrm(codegen, instructions[inst].extension, -1, op, n1)) {												// Write the ModR/M
+			printf("invalid operands to the instruction '%s'\n", inod->name);													// Failed :(
+			return 1;
+		}
+		
+		codegen_write_word(codegen, (uint32_t)get_opval(codegen, n2, 4, 0));													// Write the dword
+	} else if (instructions[inst].optype == INSTR_TYPE_MODRM) {																	// ModR/M
+		node_t *n = node->childs;
+		int op = op1;
+		int reg = -1;
+		
+		if (op1 & (INSTR_ARG_SREG | INSTR_ARG_GREGB | INSTR_ARG_GREGW | INSTR_ARG_GREGD)) {										// Reg first?
+			reg = (op1 & INSTR_ARG_SREG) ? get_sreg(((register_node_t*)n)->name) : get_gregd(((register_node_t*)n)->name);		// Yes
+			n = n->next;																										// So the MODR/M is in the next op
+			op = op2;
+		} else if (op2 & (INSTR_ARG_SREG | INSTR_ARG_GREGB | INSTR_ARG_GREGW | INSTR_ARG_GREGD)) {								// Reg in the end?
+			reg = (op2 & INSTR_ARG_SREG) ? get_sreg(((register_node_t*)n->next)->name) :
+				   get_gregd(((register_node_t*)n->next)->name);																// Yes
+		}
+		
+		if (!x86_write_modrm(codegen, instructions[inst].extension, reg, op, n)) {												// Write it!
+			printf("invalid operands to the instruction '%s'\n", inod->name);													// Failed :(
+			return 1;
 		}
 	} else if (instructions[inst].optype == INSTR_TYPE_POINTER) {																// Pointer (16:32)
 		codegen_write_dword(codegen, get_opval(codegen, node->childs->childs->next, 4, 0));										// Write the right part
 		codegen_write_word(codegen, (uint16_t)get_opval(codegen, node->childs->childs, 2, 0));									// Write the left part
+	} else if (instructions[inst].optype != INSTR_TYPE_NONE && instructions[inst].optype != INSTR_TYPE_OPREGW &&
+			   instructions[inst].optype != INSTR_TYPE_OPREGD) {
+		printf("invalid operands to the instruction '%s'\n", inod->name);														// ...
+		return 1;
 	}
 	
 	return 1;
@@ -881,8 +1489,6 @@ static void x86_tfree(token_t *token) {
 static void x86_tprint(token_t *token) {
 	if (token == NULL) {																										// Null pointer check
 		return;
-	} else if (token->type == TOK_TYPE_COMMA) {																					// Comma?
-		printf("Comma\n");																										// Yes, print it
 	} else if (token->type == TOK_TYPE_MUL) {																					// Multiply?
 		printf("Multiply\n");																									// Yes, print it
 	} else if (token->type == TOK_TYPE_OBRAC) {																					// Opening Bracket?

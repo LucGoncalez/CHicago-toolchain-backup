@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 14:38 BRT
-// Last edited on December 30 of 2018, at 23:36 BRT
+// Last edited on January 01 of 2019, at 18:57 BRT
 
 #include <arch.h>
 #include <stdio.h>
@@ -64,6 +64,8 @@ void token_print(token_t *token) {
 		printf("String: %s\n", token->value);																	// Yes, print it
 	} else if (token->type == TOK_TYPE_EOS) {																	// New line?
 		printf("New Line\n");																					// Yes, print it
+	} else if (token->type == TOK_TYPE_COMMA) {																	// Comma?
+		printf("Comma\n");																						// Yes
 	} else if (token->type == TOK_TYPE_COLON) {																	// Colon?
 		printf("Colon\n");																						// Yes
 	} else {
@@ -328,7 +330,8 @@ token_t *lexer_lex(lexer_t *lexer) {
 			for (int i = 0; i < len + 1; i++) {																	// Consume len bytes and the string end character (")
 				lexer_consume(lexer);
 			}
-		} else if (lexer->text[lexer->pos] == '\n' || lexer->text[lexer->pos] == ':') {							// Single character token?
+		} else if (lexer->text[lexer->pos] == '\n' || lexer->text[lexer->pos] == ',' ||
+				   lexer->text[lexer->pos] == ':') {															// Single character token?
 			cur = lexer_new_token(list, cur);																	// Yes, create a new token at the end of the list
 			
 			if (cur == NULL) {
@@ -336,7 +339,8 @@ token_t *lexer_lex(lexer_t *lexer) {
 				return NULL;
 			}
 			
-			cur->type = lexer->text[lexer->pos] == '\n' ? TOK_TYPE_EOS : TOK_TYPE_COLON;						// Set the type
+			cur->type = lexer->text[lexer->pos] == '\n' ? TOK_TYPE_EOS :
+						(lexer->text[lexer->pos] == ',' ? TOK_TYPE_COMMA : TOK_TYPE_COLON);						// Set the type
 			cur->filename = lexer->filename;																	// Set the filename
 			cur->line = lexer->line;																			// Set the line
 			cur->col = lexer->col;																				// And the column

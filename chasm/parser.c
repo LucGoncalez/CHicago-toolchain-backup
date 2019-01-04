@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 27 of 2018, at 11:42 BRT
-// Last edited on December 28 of 2018, at 10:59 BRT
+// Last edited on January 02 of 2019, at 15:14 BRT
 
 #include <arch.h>
 #include <errno.h>
@@ -216,6 +216,23 @@ node_t *parser_parse_number(parser_t *parser, node_t *cur) {
 	return ret;
 }
 
+node_t *parser_parse_string(parser_t *parser, node_t *cur) {
+	token_t *tok = parser_expect_noval(parser, TOK_TYPE_STRING);											// Get our token
+	
+	if (tok == NULL) {
+		return NULL;																						// Failed...
+	}
+	
+	node_t *ret = parser_new_node(cur, sizeof(string_node_t));												// Create the node
+	
+	if (ret != NULL) {																						// Failed?
+		ret->type = NODE_TYPE_STRING;																		// No, so let's set the type
+		((identifier_node_t*)ret)->value = tok->value;														// And the value!
+	}
+	
+	return ret;
+}
+
 node_t *parser_parse(parser_t *parser) {
 	if (parser == NULL || parser->tokens == NULL) {															// Null pointer checks
 		return NULL;
@@ -262,12 +279,14 @@ node_t *parser_parse(parser_t *parser) {
 				   (size = parser_accept_val(parser, TOK_TYPE_DIRECTIVE, "dw") != NULL ? 2 : 0) == 2 ||
 				   (size = parser_accept_val(parser, TOK_TYPE_DIRECTIVE, "dd") != NULL ? 4 : 0) == 4 ||
 				   (size = parser_accept_val(parser, TOK_TYPE_DIRECTIVE, "dq") != NULL ? 8 : 0) == 8) {
-			node_t *val = NULL;																				// First, let's get the val!
+start:		;node_t *val = NULL;																			// First, let's get the val!
 			
 			if (parser_check_noval(parser, TOK_TYPE_IDENTIFIER)) {											// With an identifier?
 				val = parser_parse_identifier(parser, NULL);
 			} else if (parser_check_noval(parser, TOK_TYPE_NUMBER)) {										// Number?
 				val = parser_parse_number(parser, NULL);
+			} else if (parser_check_noval(parser, TOK_TYPE_STRING)) {										// String?
+				val = parser_parse_string(parser, NULL);
 			}
 			
 			if (val == NULL) {
@@ -275,8 +294,6 @@ node_t *parser_parse(parser_t *parser) {
 				node_free_list(list);
 				return NULL;
 			}
-			
-			parser_expect_noval(parser, TOK_TYPE_EOS);														// Expect the new line in the end of the statement
 			
 			cur = parser_new_node(cur, sizeof(define_directive_node_t));									// Create the node
 			
@@ -295,6 +312,12 @@ node_t *parser_parse(parser_t *parser) {
 			cur->type = NODE_TYPE_DEFINE_DIRECTIVE;															// Set the type
 			cur->childs = val;																				// Set the argument
 			((define_directive_node_t*)cur)->size = size;													// And the size
+			
+			if (parser_accept_noval(parser, TOK_TYPE_COMMA)) {												// End?
+				goto start;																					// Nope, go back to the start!
+			} else {
+				parser_expect_noval(parser, TOK_TYPE_EOS);													// Expect the new line in the end of the statement
+			}
 		} else if ((atmp = arch_parse(parser, cur)) != NULL) {												// Try to call arch_parse
 			if (atmp == (node_t*)-1) {																		// Error out and exit?
 				node_free_list(list);																		// Yes
@@ -309,8 +332,8 @@ node_t *parser_parse(parser_t *parser) {
 		} else if (parser_check_noval(parser, TOK_TYPE_IDENTIFIER)) {										// Label?
 			char *name = parser_expect_noval(parser, TOK_TYPE_IDENTIFIER)->value;							// Yes, save the name
 			
-			if (!parser_accept_noval(parser, TOK_TYPE_COLON)) {												// Expect the colon
-				printf("%s: %d: %d: label without a colon\n", tok->filename, tok->line, tok->col);			// ...
+			if (!parser_accept_noval(parser, TOK_TYPE_COLON)) {												// We may have a colon
+				printf("%s: %d: %d: label without a colon\n", tok->filename, tok->line, tok->col);			// Warning the user
 			}
 			
 			cur = parser_new_node(cur, sizeof(label_node_t));												// Create the node
@@ -325,7 +348,7 @@ node_t *parser_parse(parser_t *parser) {
 			cur->type = NODE_TYPE_LABEL;																	// Set the type
 			((label_node_t*)cur)->name = name;																// And the label name!
 		} else {
-			printf("%s: %d: %d: Invalid/unimplemented ttype %d\n", tok->filename, tok->line, tok->col,		// Invalid/unimplemented...
+			printf("%s: %d: %d: invalid/unimplemented ttype %d\n", tok->filename, tok->line, tok->col,		// Invalid/unimplemented...
 				   tok->type);
 			node_free_list(list);
 			return NULL;

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 27 of 2018, at 11:43 BRT
-// Last edited on December 28 of 2018, at 09:51 BRT
+// Last edited on January 01 of 2018, at 18:53 BRT
 
 #ifndef __PARSER_H__
 #define __PARSER_H__
@@ -14,7 +14,8 @@
 #define NODE_TYPE_DEFINE_DIRECTIVE 0x03
 #define NODE_TYPE_IDENTIFIER 0x04
 #define NODE_TYPE_NUMBER 0x05
-#define NODE_TYPE_LABEL 0x06
+#define NODE_TYPE_STRING 0x06
+#define NODE_TYPE_LABEL 0x07
 
 typedef struct node_s {
 	uint8_t type;
@@ -36,7 +37,7 @@ typedef struct {
 typedef struct {
 	node_t base;
 	char *value;
-} identifier_node_t;
+} identifier_node_t, string_node_t;
 
 typedef struct {
 	node_t base;
