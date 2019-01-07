@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 27 of 2018, at 11:42 BRT
-// Last edited on January 02 of 2019, at 15:14 BRT
+// Last edited on January 02 of 2019, at 15:04 BRT
 
 #include <arch.h>
 #include <errno.h>
@@ -233,6 +233,27 @@ node_t *parser_parse_string(parser_t *parser, node_t *cur) {
 	return ret;
 }
 
+node_t *parser_parse_float(parser_t *parser, node_t *cur) {
+	token_t *tok = parser_expect_noval(parser, TOK_TYPE_FLOAT);												// Get our token
+	char *endptr = NULL;
+	long double val = 0;
+	
+	if (tok == NULL) {
+		return NULL;																						// Failed...
+	} else {
+		val = strtold(tok->value, &endptr);
+	}
+	
+	node_t *ret = parser_new_node(cur, sizeof(float_node_t));												// Create the node
+	
+	if (ret != NULL) {																						// Failed?
+		ret->type = NODE_TYPE_FLOAT;																		// No, so let's set the type
+		((float_node_t*)ret)->value = val;																	// And the value!
+	}
+	
+	return ret;
+}
+
 node_t *parser_parse(parser_t *parser) {
 	if (parser == NULL || parser->tokens == NULL) {															// Null pointer checks
 		return NULL;
@@ -278,7 +299,8 @@ node_t *parser_parse(parser_t *parser) {
 		} else if ((size = parser_accept_val(parser, TOK_TYPE_DIRECTIVE, "db") != NULL ? 1 : 0) == 1 ||		// Define byte/word/dword/quad directive?
 				   (size = parser_accept_val(parser, TOK_TYPE_DIRECTIVE, "dw") != NULL ? 2 : 0) == 2 ||
 				   (size = parser_accept_val(parser, TOK_TYPE_DIRECTIVE, "dd") != NULL ? 4 : 0) == 4 ||
-				   (size = parser_accept_val(parser, TOK_TYPE_DIRECTIVE, "dq") != NULL ? 8 : 0) == 8) {
+				   (size = parser_accept_val(parser, TOK_TYPE_DIRECTIVE, "dq") != NULL ? 8 : 0) == 8 ||
+				   (size = parser_accept_val(parser, TOK_TYPE_DIRECTIVE, "dt") != NULL ? 10 : 0) == 10) {
 start:		;node_t *val = NULL;																			// First, let's get the val!
 			
 			if (parser_check_noval(parser, TOK_TYPE_IDENTIFIER)) {											// With an identifier?
@@ -287,6 +309,8 @@ start:		;node_t *val = NULL;																			// First, let's get the val!
 				val = parser_parse_number(parser, NULL);
 			} else if (parser_check_noval(parser, TOK_TYPE_STRING)) {										// String?
 				val = parser_parse_string(parser, NULL);
+			} else if (parser_check_noval(parser, TOK_TYPE_FLOAT)) {										// Float?
+				val = parser_parse_float(parser, NULL);
 			}
 			
 			if (val == NULL) {

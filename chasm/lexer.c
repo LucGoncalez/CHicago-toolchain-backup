@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 14:38 BRT
-// Last edited on January 01 of 2019, at 18:57 BRT
+// Last edited on January 07 of 2019, at 15:27 BRT
 
 #include <arch.h>
 #include <stdio.h>
@@ -9,10 +9,10 @@
 #include <string.h>
 #include <strings.h>
 
-static char *directives[7] = {
+static char *directives[8] = {
 	"section",
 	"global", "extern",
-	"db", "dw", "dd", "dq"
+	"db", "dw", "dd", "dq", "dt"
 };
 
 void token_free_list(token_t *token) {
@@ -114,10 +114,6 @@ static int lexer_is_bin(char c) {
 	return c == '0' || c == '1';																				// Binary number is 0 or 1
 }
 
-static int lexer_is_oct(char c) {
-	return c >= '0' && c <= '7';																				// Octal number is any number from 0 to 7
-}
-
 static int lexer_is_hex(char c) {
 	return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') ||													// Hexadecimal number is any number from 0 to 9 or from A to F
 		   (c >= 'A' && c <= 'F');
@@ -161,7 +157,7 @@ static token_t *lexer_new_token(token_t *list, token_t *cur) {
 }
 
 static int lexer_find_directive(char *name) {
-	for (int i = 0; i < 7; i++) {
+	for (int i = 0; i < 8; i++) {
 		if ((strlen(directives[i]) == strlen(name)) && !strcasecmp(directives[i], name)) {						// Found?
 			return 1;																							// Yes :)
 		}
@@ -265,12 +261,17 @@ token_t *lexer_lex(lexer_t *lexer) {
 				
 				for (; lexer->pos + len < lexer->length && lexer_is_hex(lexer->text[lexer->pos + len]);
 					   len++) ;
-			} else if ((lexer->pos + len + 1 < lexer->length) && lexer->text[lexer->pos + len] == '0') {		// Octal number
-				for (; lexer->pos + len < lexer->length && lexer_is_oct(lexer->text[lexer->pos + len]);
-					   len++) ;
 			} else {																							// Decimal number
 				for (; lexer->pos + len < lexer->length && lexer_is_dec(lexer->text[lexer->pos + len]);
 					   len++) ;
+				
+				if (lexer->pos + len < lexer->length && lexer->text[lexer->pos + len] == '.') {					// Float number?
+					cur->type = TOK_TYPE_FLOAT;																	// Yes!
+					len++;
+					
+					for (; lexer->pos + len < lexer->length && lexer_is_dec(lexer->text[lexer->pos + len]);
+						   len++) ;
+				}
 			}
 			
 			cur->value = malloc((sign != -1 ? 1 : 0) + len + 1);												// Alloc space for copying the number
@@ -328,6 +329,41 @@ token_t *lexer_lex(lexer_t *lexer) {
 			cur->value[len] = '\0';																				// Add the NUL terminator at the end
 			
 			for (int i = 0; i < len + 1; i++) {																	// Consume len bytes and the string end character (")
+				lexer_consume(lexer);
+			}
+		} else if (lexer->text[lexer->pos] == '\'') {															// Single ASCII character?
+			cur = lexer_new_token(list, cur);																	// Yes, create a new token at the end of the list
+			
+			if (cur == NULL) {
+				token_free_list(list);																			// Failed...
+				return NULL;
+			} else if (lexer->pos + 2 >= lexer->length) {														// Unterminated?
+				printf("%s: %d: %d: unterminated character\n", cur->filename, cur->line, cur->col);				// Yes :(
+				token_free_list(list);
+				return NULL;
+			} else if (lexer->text[lexer->pos + 2] != '\'') {													// Multi-byte character?
+				printf("%s: %d: %d: multi-byte character\n", cur->filename, cur->line, cur->col);				// Yes :(
+				token_free_list(list);
+				return NULL;
+			}
+			
+			cur->type = TOK_TYPE_NUMBER;
+			cur->filename = lexer->filename;																	// Set the filename
+			cur->line = lexer->line;																			// Set the line
+			cur->col = lexer->col;																				// And the column
+			
+			int len = snprintf(NULL, 0, "%d", (int)lexer->text[lexer->pos + 1]);								// Get the buffer size
+			
+			cur->value = malloc(len + 1);																		// Alloc space for transform the character into int, and the int into string
+			
+			if (cur->value == NULL) {
+				token_free_list(list);																			// Failed...
+				return NULL;
+			}
+			
+			snprintf(cur->value, len + 1, "%d", (int)lexer->text[lexer->pos + 1]);								// Transform the character into int, and the int into string!
+			
+			for (int i = 0; i < 3; i++) {																		// Consume the start (') char, the char itself and the end char (')
 				lexer_consume(lexer);
 			}
 		} else if (lexer->text[lexer->pos] == '\n' || lexer->text[lexer->pos] == ',' ||

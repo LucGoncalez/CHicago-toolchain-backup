@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 14:35 BRT
-// Last edited on January 01 of 2019, at 18:54 BRT
+// Last edited on January 07 of 2019, at 14:38 BRT
 
 #ifndef __LEXER_H__
 #define __LEXER_H__
@@ -12,9 +12,10 @@
 #define TOK_TYPE_DIRECTIVE 0x01
 #define TOK_TYPE_NUMBER 0x02
 #define TOK_TYPE_STRING 0x03
-#define TOK_TYPE_EOS 0x04
-#define TOK_TYPE_COMMA 0x05
-#define TOK_TYPE_COLON 0x06
+#define TOK_TYPE_FLOAT 0x04
+#define TOK_TYPE_EOS 0x05
+#define TOK_TYPE_COMMA 0x06
+#define TOK_TYPE_COLON 0x07
 
 typedef struct token_s {
 	uint8_t type;

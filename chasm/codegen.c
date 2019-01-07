@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 28 of 2018, at 17:15 BRT
-// Last edited on January 05 of 2019, at 20:37 BRT
+// Last edited on January 07 of 2019, at 16:39 BRT
 
 #include <arch.h>
 #include <stdio.h>
@@ -248,6 +248,14 @@ int codegen_have_label(codegen_t *codegen, char *name) {
 	return 0;																									// Nope :(
 }
 
+void printbin(char c) {
+	for (int i = 7; i >= 0; --i) {
+		putchar((c & (1 << i)) ? '1' : '0');
+	}
+	
+	putchar('\n');
+}
+
 int codegen_gen(codegen_t *codegen) {
 	if (codegen == NULL) {																						// Null pointer check
 		return 0;
@@ -315,12 +323,63 @@ int codegen_gen(codegen_t *codegen) {
 					}
 					
 					codegen_write_qword(codegen, (uint64_t)num->value);											// Write!
+				} else if (def->size == 10) {																	// Extended precision floating point?
+					codegen_write_qword(codegen, num->value);													// Yes, write!
+					codegen_write_word(codegen, 0);
 				}
 			} else if (node->childs->type == NODE_TYPE_STRING) {												// Add all the bytes from the string?
 				char *str = ((string_node_t*)node->childs)->value;												// Yes
 				
 				for (size_t i = 0; i < strlen(str); i++) {														// Write!
 					codegen_write_byte(codegen, str[i]);
+				}
+			} else if (node->childs->type == NODE_TYPE_FLOAT) {													// Put a floating point number?
+				float_node_t *num = (float_node_t*)node->childs;												// Yeah!
+				
+				if (def->size == 1) {																			// Minifloat?
+					uint8_t value = 0;																			// Yes, let's mount the byte!
+					int man = ((int)(num->value * 100) % 100);													// Get the mantissa
+					int exp = abs((int)num->value);																// And the exponent
+					
+					if (num->value < 0) {																		// Set the sign bit?
+						value |= (1 << 7);																		// Yes
+					}
+					
+					value |= ((exp & 0xF) << 3) | (man & 0x07);													// Set the exponent and the mantissa
+					
+					codegen_write_byte(codegen, value);															// Write!
+				} else if (def->size == 2) {																	// Half-precision?
+					uint16_t value = 0;																			// Yes, let's mount the word!
+					int man = ((int)(num->value * 1000) % 1000);												// Get the mantissa
+					int exp = abs((int)num->value);																// And the exponent
+					
+					if (num->value < 0) {																		// Set the sign bit?
+						value |= (1 << 15);																		// Yes
+					}
+					
+					value |= ((exp & 0x1F) << 10) | (man & 0x3FF);												// Set the exponent and the mantissa
+					
+					codegen_write_word(codegen, value);															// Write!
+				} else if (def->size == 4) {																	// Single-precision?
+					float fvalue = (float)num->value;															// Yes, convert the long double to float
+					uint32_t value = 0;
+					
+					memcpy(&value, &fvalue, 4);																	// The float to uint32_t
+					codegen_write_dword(codegen, value);														// And write it!
+				} else if (def->size == 8) {																	// Double-precision?
+					double fvalue = (double)num->value;															// Yes, convert the long double to double
+					uint64_t value = 0;
+					
+					memcpy(&value, &fvalue, 8);																	// The double to uint64_t
+					codegen_write_qword(codegen, value);														// And write it!
+				} else if (def->size == 10) {																	// Extended-precision?
+					uint64_t value1 = 0;																		// Yes
+					uint16_t value2 = 0;
+					
+					memcpy(&value1, &num->value, 8);															// First, convert the first 8 bytes to uint64_t
+					memcpy(&value2, ((void*)&num->value) + 8, 2);												// And the last 2 bytes to uint16_t
+					codegen_write_qword(codegen, value1);														// Now write everything!
+					codegen_write_word(codegen, value2);
 				}
 			}
 		} else if (node->type == NODE_TYPE_LABEL) {																// Create label?
