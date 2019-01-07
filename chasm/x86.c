@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 17:37 BRT
-// Last edited on January 04 of 2019, at 16:09 BRT
+// Last edited on January 06 of 2019, at 19:55 BRT
 
 #include <arch.h>
 #include <inttypes.h>
@@ -11,40 +11,61 @@
 #include <strings.h>
 #include <x86.h>
 
-static char *registers[30] = {
+static char *registers[70] = {
 	"eax", "ebx", "ecx", "edx", "esi", "edi", "ebp", "esp",
 	"ax", "bx", "cx", "dx", "si", "di", "bp", "sp",
 	"ah", "bh", "ch", "dh",
 	"al", "bl", "cl", "dl",
-	"cs", "ds", "es", "fs", "gs", "ss"
+	"cs", "ds", "es", "fs", "gs", "ss",
+	"cr0", "cr1", "cr2", "cr3", "cr4", "cr5", "cr6", "cr7",
+	"dr0", "dr1", "dr2", "dr3", "dr4", "dr5", "dr6", "dr7",
+	"tr0", "tr1", "tr2", "tr3", "tr4", "tr5", "tr6", "tr7",
+	"st0", "st1", "st2", "st3", "st4", "st5", "st6", "st7",
+	"xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7"
 };
 
 static char *sregs[6] = { "es", "cs", "ss", "ds", "fs", "gs" };
+static char *cregs[8] = { "cr0", "cr1", "cr2", "cr3", "cr4", "cr5", "cr6", "cr7" };
+static char *dregs[8] = { "dr0", "dr1", "dr2", "dr3", "dr4", "dr5", "dr6", "dr7" };
+static char *tregs[8] = { "dr0", "dr1", "dr2", "dr3", "dr4", "dr5", "dr6", "dr7" };
 static char *gregsb[8] = { "al", "cl", "dl", "bl", "ah", "ch", "dh", "bh" };
 static char *gregsw[8] = { "ax", "cx", "dx", "bx", "sp", "bp", "si", "di" };
 static char *gregsd[8] = { "eax", "ecx", "edx", "ebx", "esp", "ebp", "esi", "edi" };
+static char *stregs[8] = { "st0", "st1", "st2", "st3", "st4", "st5", "st6", "st7" };
+static char *xregs[8] = { "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7" };
 
-static char *mnemonics[257] = {
-	"aaa", "aad", "aam", "aas", "adc", "adcb", "adcw", "adcd", "add", "addb", "addw", "addd",
-	"and", "andb", "andw", "andd", "arpl", "bound", "bsf", "bsr", "bt", "btw", "btd", "btc", "btcw",
-	"btcd", "btr", "btrw", "btrd", "bts", "btsw", "btsd", "call", "cbw", "cwde", "clc", "cld", "cli",
-	"clts", "cmc", "cmp", "cmpb", "cmpw", "cmpd", "cmpsb", "cmpsw", "cmpsd", "cwd", "cdq", "daa", "das",
-	"dec", "div", "enter", "hlt", "idiv", "imul", "imulw", "imuld", "in", "inc", "insb", "insw", "insd",
-	"int3", "int", "into", "iret", "iretw", "iretd", "ja", "jae", "jb", "jbe", "jc", "jcxz", "jecxz",
-	"je", "jz", "jg", "jge", "jl", "jle", "jna", "jnae", "jnb", "jnbe", "jnc", "jne", "jng", "jnge",
-	"jnl", "jnle", "jno", "jnp", "jns", "jnz", "jo", "jp", "jpe", "jpo", "js", "jz", "jmp", "lahf",
-	"lar", "lea", "leave", "lgdt", "lidt", "lds", "lss", "les", "lfs", "lgs", "lldt", "lmsw", "lodsb", "lodsw",
-	"lodsd", "loop", "loope", "loopz", "loopne", "loopnz", "lsl", "ltr", "mov", "movb", "movw", "movd", "movsb",
-	"movsw", "movsd", "movsxb", "movsxw", "movzxb", "movzxw", "mul", "neg", "nop", "not", "or", "orb", "orw", "ord",
-	"out", "outsb", "outsw", "outsd", "pop", "popa", "popaw", "popad", "popf" "popfw", "popfd", "push", "pusha", "pushaw",
-	"pushad", "pushf", "pushfw", "pushfd", "rclb", "rclw", "rcld", "rcrb", "rcrw", "rcrd", "rolb", "rolw", "rold", "rorb",
-	"rorw", "rord", "ret", "retf", "retfw", "retfd", "sahf", "salb", "salw", "sald", "sarb", "sarw", "sard", "shlb",
-	"shlw", "shld", "shrb", "shrw", "shrd", "sbb", "sbbb", "sbbw", "sbbd", "scasb", "scasw", "scasd",
-	"seta", "setae", "setb", "setbe", "setc", "sete", "setg", "setge", "setl", "setle", "setna", "setnae",
-	"setnb", "setnbe", "setnc", "setne", "setng", "setnge", "setnl", "setnle", "setno", "setnp", "setns",
-	"setnz", "seto", "setp", "setpe", "setpo", "sets", "setz", "sgdt", "sidt", "smsw", "stc", "std", "sti",
-	"stosb", "stosw", "stosd", "str", "sub", "subb", "subw", "subd", "test", "testb", "testw", "testd",
-	"verr", "verrw", "wait", "xchg", "xlatb", "xlat", "xor", "xorb", "xorw", "xord"
+static char *mnemonics[409] = {
+	"aaa", "aad", "aam", "aas", "adc", "adcb", "adcw", "adcd", "adcx", "add", "addb", "addw", "addd",
+	"addpd", "addps", "addsd", "addss", "addsubpd", "addsubps", "adox", "aesdec", "aesdeclast", "aesenc",
+	"aesenclast", "aesimc", "aeskeygenassist", "and", "andb", "andw", "andd", "andn", "andnpd", "andnps",
+	"andpd", "andps", "arpl", "bextr", "blendpd", "blendps", "blendvpd", "blendvps", "blsi", "blsmask", "blsr",
+	"bound", "bsf", "bsr", "bswap", "bt", "btw", "btd", "btc", "btcw", "btcd", "btr", "btrw", "btrd", "bts", "btsw",
+	"btsd", "bzhi", "call", "cbw", "cwde", "clac", "clc", "cld", "clflush", "clflushopt", "cli", "clts", "clwb",
+	"cmc", "cmova", "cmovae", "cmovb", "cmovbe", "cmovc", "cmove", "cmovg", "cmovge", "cmovl", "cmovle", "cmovna",
+	"cmovnae", "cmovnb", "cmovnbe", "cmovnc", "cmovne", "cmovng", "cmovnge", "cmovnl", "cmovnle", "cmovno", "cmovnp",
+	"cmovns", "cmovnz", "cmovo", "cmovp", "cmovpe", "cmovpo", "cmovs", "cmovz", "cmp", "cmpb", "cmpw", "cmpd", "cmppd",
+	"cmpps", "cmpsb", "cmpsw", "cmpsd", "cmpss", "cmpxchg", "cmpxchg8b", "comisd", "comiss", "cpuid", "crc32b", "crc32w",
+	"crc32d", "cvtdq2pd", "cvtdq2ps", "cvtpd2dq", "cvtpd2ps", "cvtps2dq", "cvtps2pd", "cvtsd2si", "cvtsd2ss", "cvtsi2sd",
+	"cvtsi2ss", "cvtss2sd", "cvtss2si", "cvttpd2dq", "cvttps2dq", "cvttsd2si", "cvttss2si", "cwd", "cdq", "daa", "das",
+	"dec", "div", "divpd", "divps", "divsd", "divss", "dppd", "dpps", "enter", "extractps", "f2xm1", "fabs", "fadd",
+	"faddd", "faddq", "faddp", "fiaddd", "fiaddw", "hlt", "idiv", "imul", "imulw", "imuld", "in", "inc", "insb", "insw",
+	"insd", "int3", "int", "into", "invd", "invlpg", "iret", "iretw", "iretd", "nja", "njae", "njb", "njbe", "njc", "njcxz",
+	"njecxz", "nje", "njz", "njg", "njge", "njl", "njle", "njna", "njnae", "njnb", "njnbe", "njnc", "njne", "njng", "njnge",
+	"njnl", "njnle", "njno", "njnp", "njns", "njnz", "njo", "njp", "njpe","njpo", "njs", "njz", "njmp", "ja", "jae", "jb",
+	"jbe", "jc", "jcxz", "jecxz", "je", "jz", "jg", "jge", "jl", "jle", "jna", "jnae", "jnb", "jnbe", "jnc", "jne", "jng",
+	"jnge", "jnl", "jnle", "jno", "jnp", "jns", "jnz", "jo", "jp", "jpe","jpo", "js", "jz", "jmp", "lahf", "lar", "lea",
+	"leave", "lgdt", "lidt", "lds", "lss", "les", "lfs", "lgs", "lldt", "lmsw", "lodsb", "lodsw", "lodsd", "loop", "loope",
+	"loopz", "loopne", "loopnz", "lsl", "ltr", "mov", "movb", "movw", "movd", "movsb", "movsw", "movsd", "movsxb", "movsxw",
+	"movzxb", "movzxw", "mul", "neg", "nop", "not", "or", "orb", "orw", "ord", "out", "outsb", "outsw", "outsd", "pop",
+	"popa", "popaw", "popad", "popf", "popfw", "popfd", "push", "pusha", "pushaw", "pushad", "pushf", "pushfw", "pushfd",
+	"rclb", "rclw", "rcld", "rcrb", "rcrw", "rcrd", "rolb", "rolw", "rold", "rorb", "rorw", "rord", "rdmsr", "rdpmc",
+	"rdtsc", "ret", "retf", "retfw", "retfd", "rsm", "sahf", "salb", "salw", "sald", "sarb", "sarw", "sard", "shlb", "shlw",
+	"shld", "shrb", "shrw", "shrd", "sbb", "sbbb", "sbbw", "sbbd", "scasb", "scasw", "scasd", "seta", "setae", "setb",
+	"setbe", "setc", "sete", "setg", "setge", "setl", "setle", "setna", "setnae", "setnb", "setnbe", "setnc", "setne",
+	"setng", "setnge", "setnl", "setnle", "setno", "setnp", "setns", "setnz", "seto", "setp", "setpe", "setpo", "sets",
+	"setz", "sgdt", "sidt", "smsw", "stc", "std", "sti", "stosb", "stosw", "stosd", "str", "sub", "subb", "subw", "subd",
+	"sysenter", "sysexit", "test", "testb", "testw", "testd", "ud2", "verr", "verw", "wait", "wbinvd", "wrmsr", "xadd",
+	"xchg", "xlatb", "xlat", "xor", "xorb", "xorw", "xord"
 };
 
 struct {
@@ -57,598 +78,810 @@ struct {
 	uint32_t args;
 	uint32_t arg1;
 	uint32_t arg2;
-} instructions[503] = {
-	{ "aaa", 0x37, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "aad", 0xD5, 0x0A, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "aam", 0xD4, 0x0A, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "aas", 0x3F, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "adc", 0x14, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB },
-	{ "adc", 0x15, -1, INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMW },
-	{ "adc", 0x15, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_IMMW },
-	{ "adcb", 0x80, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "adcw", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "adcd", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "adcw", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMW },
-	{ "adcd", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMD },
-	{ "adc", 0x10, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB },
-	{ "adc", 0x11, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW },
-	{ "adc", 0x11, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD },
-	{ "adc", 0x12, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM },
-	{ "adc", 0x13, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
-	{ "adc", 0x13, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
-	
-	{ "add", 0x04, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB },
-	{ "add", 0x05, -1, INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMW },
-	{ "add", 0x05, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_IMMW },
-	{ "addb", 0x80, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "addw", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "addd", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "addw", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMW },
-	{ "addd", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMD },
-	{ "add", 0x00, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB },
-	{ "add", 0x01, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW },
-	{ "add", 0x01, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD },
-	{ "add", 0x02, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM },
-	{ "add", 0x03, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
-	{ "add", 0x03, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
-	
-	{ "and", 0x24, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB },
-	{ "and", 0x25, -1, INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMW },
-	{ "and", 0x25, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_IMMW },
-	{ "andb", 0x80, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "andw", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "andd", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "andw", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMW },
-	{ "andd", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMD },
-	{ "and", 0x20, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB },
-	{ "and", 0x21, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW },
-	{ "and", 0x21, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD },
-	{ "and", 0x22, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM },
-	{ "and", 0x23, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
-	{ "and", 0x23, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
-	
-	{ "arpl", 0x63, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW },
-	
-	{ "bound", 0x62, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
-	{ "bound", 0x62, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
-	
-	{ "bsf", 0x0F, 0xBC, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
-	{ "bsr", 0x0F, 0xBC, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
-	
-	{ "bsr", 0x0F, 0xBD, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
-	{ "bsr", 0x0F, 0xBD, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
-	
-	{ "bt", 0x0F, 0xA3, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
-	{ "bt", 0x0F, 0xA3, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
-	{ "btw", 0x0F, 0xBA, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "btd", 0x0F, 0xBA, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	
-	{ "btc", 0x0F, 0xBB, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
-	{ "btc", 0x0F, 0xBB, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
-	{ "btcw", 0x0F, 0xBA, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "btcd", 0x0F, 0xBA, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	
-	{ "btr", 0x0F, 0xB3, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
-	{ "btr", 0x0F, 0xB3, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
-	{ "btrw", 0x0F, 0xBA, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 6, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "btrd", 0x0F, 0xBA, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 6, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	
-	{ "bts", 0x0F, 0xAB, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
-	{ "bts", 0x0F, 0xAB, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
-	{ "btsw", 0x0F, 0xBA, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "btsd", 0x0F, 0xBA, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	
-	{ "call", 0xE8, -1, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "call", 0xFF, -1, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "call", 0x9A, -1, INSTR_TYPE_POINTER, 0, -1, 1, INSTR_ARG_POINTER, INSTR_ARG_NONE },
-	
-	{ "cbw", 0x98, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "cwde", 0x98, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "clc", 0xF8, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "cld", 0xFC, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "cli", 0xFA, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "clts", 0x0F, 0x06, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "cmc", 0xF5, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "cmp", 0x3C, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB },
-	{ "cmp", 0x3D, -1, INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMW },
-	{ "cmp", 0x3D, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_IMMW },
-	{ "cmpb", 0x80, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "cmpw", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "cmpd", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "cmpw", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMW },
-	{ "cmpd", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMD },
-	{ "cmp", 0x38, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB },
-	{ "cmp", 0x39, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW },
-	{ "cmp", 0x39, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD },
-	{ "cmp", 0x3A, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM },
-	{ "cmp", 0x3B, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
-	{ "cmp", 0x3B, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
-	
-	{ "cmpsb", 0xA6, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "cmpsw", 0xA7, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "cmpsd", 0xA7, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "cwd", 0x99, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "cdq", 0x99, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "daa", 0x27, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "das", 0x2F, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "dec", 0xFF, -1, INSTR_TYPE_MODRM, 0, 1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "dec", 0x48, -1, INSTR_TYPE_OPREGW, 1, -1, 1, INSTR_ARG_GREGW, INSTR_ARG_NONE },
-	{ "dec", 0x48, -1, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_GREGD, INSTR_ARG_NONE },
-	
-	{ "div", 0xF6, -1, INSTR_TYPE_MODRM, 0, 6, 2, INSTR_ARG_ACCUMB, INSTR_ARG_MODRM },
-	{ "div", 0xF7, -1, INSTR_TYPE_MODRM, 1, 6, 2, INSTR_ARG_ACCUMW, INSTR_ARG_MODRM },
-	{ "div", 0xF7, -1, INSTR_TYPE_MODRM, 0, 6, 2, INSTR_ARG_ACCUMD, INSTR_ARG_MODRM },
-	
-	{ "enter", 0xC8, -1, INSTR_TYPE_WORD | INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_IMMW, INSTR_ARG_IMMB },
-	
-	{ "hlt", 0xF4, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "idiv", 0xF6, -1, INSTR_TYPE_MODRM, 0, 7, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "idiv", 0xF7, -1, INSTR_TYPE_MODRM, 1, 7, 2, INSTR_ARG_ACCUMW, INSTR_ARG_MODRM },
-	{ "idiv", 0xF7, -1, INSTR_TYPE_MODRM, 0, 7, 2, INSTR_ARG_ACCUMD, INSTR_ARG_MODRM },
-	
-	{ "imulb", 0xF6, -1, INSTR_TYPE_MODRM, 0, 5, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "imulw", 0xF7, -1, INSTR_TYPE_MODRM, 0, 6, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "imuld", 0xF7, -1, INSTR_TYPE_MODRM, 0, 6, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "imul", 0x0F, 0xAF, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW },
-	{ "imul", 0x0F, 0xAF, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD },
-	{ "imul", 0x6B, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_IMMB },
-	{ "imul", 0x6B, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_IMMB },
-	{ "imul", 0x69, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_IMMW },
-	{ "imul", 0x69, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_IMMD },
-	
-	{ "in", 0xE4, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB },
-	{ "in", 0xE5, -1, INSTR_TYPE_BYTE, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMB },
-	{ "in", 0xE5, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_IMMB },
-	{ "in", 0xEC, -1, INSTR_TYPE_NONE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_DESTW },
-	{ "in", 0xED, -1, INSTR_TYPE_NONE, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_DESTW },
-	{ "in", 0xED, -1, INSTR_TYPE_NONE, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_DESTW },
-	
-	{ "inc", 0xFF, -1, INSTR_TYPE_MODRM, 0, 0, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "inc", 0x40, -1, INSTR_TYPE_OPREGW, 1, -1, 1, INSTR_ARG_GREGW, INSTR_ARG_NONE },
-	{ "inc", 0x40, -1, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_GREGD, INSTR_ARG_NONE },
-	
-	{ "insb", 0x6C, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "insw", 0x6D, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "insd", 0x6D, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "int3", 0xCC, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "int", 0xCD, -1, INSTR_TYPE_BYTE, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "into", 0xCE, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "iret", 0xCF, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "iretw", 0xCF, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "iretd", 0xCF, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "ja", 0x77, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jae", 0x73, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jb", 0x72, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jbe", 0x76, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jc", 0x72, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jcxz", 0xE3, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jecxz", 0xE3, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "je", 0x74, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jz", 0x74, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jg", 0x7F, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jge", 0x7D, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jl", 0x7C, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jle", 0x7E, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jna", 0x76, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jnae", 0x72, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jnb", 0x73, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jnbe", 0x77, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jnc", 0x73, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jne", 0x75, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jng", 0x7E, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jnge", 0x7C, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jnl", 0x7D, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jnle", 0x7F, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jno", 0x71, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jnp", 0x7B, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jns", 0x79, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jnz", 0x75, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jo", 0x70, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jp", 0x7A, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jpe", 0x7A, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jpo", 0x7B, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "js", 0x78, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jz", 0x74, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "ja", 0x87, -1, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jae", 0x0F, 0x83, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jb", 0x0F, 0x82, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jbe", 0x0F, 0x86, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jc", 0x0F, 0x82, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "je", 0x0F, 0x84, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jz", 0x0F, 0x84, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jg", 0x0F, 0x8F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jge", 0x0F, 0x8D, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jl", 0x0F, 0x8C, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jle", 0x0F, 0x8E, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jna", 0x0F, 0x86, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jnae", 0x0F, 0x82, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jnb", 0x0F, 0x83, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jnbe", 0x0F, 0x87, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jnc", 0x0F, 0x83, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jne", 0x0F, 0x85, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jng", 0x0F, 0x8E, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jnge", 0x0F, 0x8C, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jnl", 0x0F, 0x8D, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jnle", 0x0F, 0x8F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jno", 0x0F, 0x81, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jnp", 0x0F, 0x8B, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jns", 0x0F, 0x89, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jnz", 0x0F, 0x85, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jo", 0x0F, 0x80, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jp", 0x0F, 0x8A, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jpe", 0x0F, 0x8A, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jpo", 0x0F, 0x8B, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "js", 0x0F, 0x88, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jz", 0x0F, 0x84, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jmp", 0xEB, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "jmp", 0xE9, -1, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "jmp", 0xFF, -1, INSTR_TYPE_MODRM, 0, 4, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "jmp", 0xEA, -1, INSTR_TYPE_POINTER, 0, -1, 1, INSTR_ARG_POINTER, INSTR_ARG_NONE },
-	
-	{ "lahf", 0x9F, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "lar", 0x0F, 0x02, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
-	{ "lar", 0x0F, 0x02, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
-	
-	{ "lea", 0x8D, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
-	{ "lea", 0x8D, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
-	
-	{ "leave", 0xC9, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "lgdt", 0x0F, 0x01, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "lidt", 0x0F, 0x01, INSTR_TYPE_MODRM, 0, 3, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	
-	{ "lds", 0xC5, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
-	{ "lds", 0xC5, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
-	{ "lss", 0x0F, 0xB2, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
-	{ "lss", 0x0F, 0xB2, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
-	{ "lss", 0xC4, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
-	{ "lss", 0xC4, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
-	{ "lfs", 0x0F, 0xB4, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
-	{ "lfs", 0x0F, 0xB4, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
-	{ "lgs", 0x0F, 0xB5, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
-	{ "lgs", 0x0F, 0xB5, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
-	
-	{ "lldt", 0x0F, 0x00, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	
-	{ "lmsw", 0x0F, 0x01, INSTR_TYPE_MODRM, 0, 6, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	
-	{ "lodsb", 0xAC, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "lodsw", 0xAD, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "lodsd", 0xAD, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "loop", 0xE2, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "loope", 0xE1, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "loopz", 0xE1, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "loopne", 0xE0, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	{ "loopnz", 0xE0, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	
-	{ "lsl", 0x0F, 0x03, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
-	{ "lsl", 0x0F, 0x03, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
-	
-	{ "ltr", 0x0F, 0x00, INSTR_TYPE_MODRM, 0, 6, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	
-	{ "mov", 0x88, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB },
-	{ "mov", 0x89, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW },
-	{ "mov", 0x89, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD },
-	{ "mov", 0x8A, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM },
-	{ "mov", 0x8B, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
-	{ "mov", 0x8B, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
-	{ "mov", 0x8C, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_SREG },
-	{ "mov", 0x8E, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_SREG, INSTR_ARG_MODRM },
-	{ "mov", 0xA0, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_MOFFS },
-	{ "mov", 0xA1, -1, INSTR_TYPE_DWORD, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_MOFFS },
-	{ "mov", 0xA1, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_MOFFS },
-	{ "mov", 0xA2, -1, INSTR_TYPE_DWORD | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_MOFFS, INSTR_ARG_ACCUMB },
-	{ "mov", 0xA3, -1, INSTR_TYPE_DWORD | INSTR_TYPE_LEFT, 1, -1, 2, INSTR_ARG_MOFFS, INSTR_ARG_ACCUMW },
-	{ "mov", 0xA3, -1, INSTR_TYPE_DWORD | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_MOFFS, INSTR_ARG_ACCUMD },
-	{ "mov", 0xB0, -1, INSTR_TYPE_OPREGB | INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_IMMB },
-	{ "mov", 0xB8, -1, INSTR_TYPE_OPREGW | INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_IMMW },
-	{ "mov", 0xB8, -1, INSTR_TYPE_OPREGD | INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_IMMD },
-	{ "movb", 0xC6, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "movw", 0xC7, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMW },
-	{ "movd", 0xC7, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMD },
-	
-	{ "movsb", 0xA4, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "movsw", 0xA5, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "movsd", 0xA5, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "movsxb", 0x0F, 0xBE, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
-	{ "movsxb", 0x0F, 0xBE, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
-	{ "movsxw", 0x0F, 0xBF, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
-	
-	{ "movzxb", 0x0F, 0xB6, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
-	{ "movzxb", 0x0F, 0xB6, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
-	{ "movzxw", 0x0F, 0xB7, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
-	
-	{ "mul", 0xF6, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_ACCUMB, INSTR_ARG_MODRM },
-	{ "mul", 0xF7, -1, INSTR_TYPE_MODRM, 1, 4, 2, INSTR_ARG_ACCUMW, INSTR_ARG_MODRM },
-	{ "mul", 0xF7, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_ACCUMD, INSTR_ARG_MODRM },
-	
-	{ "neg", 0xF7, -1, INSTR_TYPE_MODRM, 0, 3, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	
-	{ "nop", 0x90, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "not", 0xF6, -1, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	
-	{ "or", 0x0C, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB },
-	{ "or", 0x0D, -1, INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMW },
-	{ "or", 0x0D, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_IMMW },
-	{ "orb", 0x80, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "orw", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "ord", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "orw", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMW },
-	{ "ord", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMD },
-	{ "or", 0x08, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB },
-	{ "or", 0x09, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW },
-	{ "or", 0x09, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD },
-	{ "or", 0x0A, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM },
-	{ "or", 0x0B, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
-	{ "or", 0x0B, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
-	
-	{ "out", 0xE6, -1, INSTR_TYPE_BYTE | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_IMMB, INSTR_ARG_ACCUMB },
-	{ "out", 0xE7, -1, INSTR_TYPE_BYTE | INSTR_TYPE_LEFT, 1, -1, 2, INSTR_ARG_IMMB, INSTR_ARG_ACCUMW },
-	{ "out", 0xE7, -1, INSTR_TYPE_BYTE | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_IMMB, INSTR_ARG_ACCUMD },
-	{ "out", 0xEE, -1, INSTR_TYPE_NONE, 0, -1, 2, INSTR_ARG_DESTW, INSTR_ARG_ACCUMB },
-	{ "out", 0xEF, -1, INSTR_TYPE_NONE, 1, -1, 2, INSTR_ARG_DESTW, INSTR_ARG_ACCUMW },
-	{ "out", 0xEF, -1, INSTR_TYPE_NONE, 0, -1, 2, INSTR_ARG_DESTW, INSTR_ARG_ACCUMD },
-	
-	{ "outsb", 0x6E, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "outsw", 0x6F, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "outsd", 0x6F, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "pop", 0x58, -1, INSTR_TYPE_OPREGW, 1, -1, 1, INSTR_ARG_GREGW, INSTR_ARG_NONE },
-	{ "pop", 0x58, -1, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_GREGD, INSTR_ARG_NONE },
-	
-	{ "popa", 0x61, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "popaw", 0x61, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "popad", 0x61, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "popf", 0x9D, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "popfw", 0x9D, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "popfd", 0x9D, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "push", 0x50, -1, INSTR_TYPE_OPREGW, 1, -1, 1, INSTR_ARG_GREGW, INSTR_ARG_NONE },
-	{ "push", 0x50, -1, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_GREGD, INSTR_ARG_NONE },
-	{ "push", 0x68, -1, INSTR_TYPE_DWORD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE },
-	
-	{ "pusha", 0x60, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "pushaw", 0x60, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "pushad", 0x60, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "pushf", 0x9C, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "pushfw", 0x9C, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "pushfd", 0x9C, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "rclb", 0xD0, -1, INSTR_TYPE_MODRM, 0, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
-	{ "rclb", 0xD2, -1, INSTR_TYPE_MODRM, 0, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
-	{ "rclb", 0xC0, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "rclw", 0xD1, -1, INSTR_TYPE_MODRM, 1, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
-	{ "rclw", 0xD3, -1, INSTR_TYPE_MODRM, 1, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
-	{ "rclw", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "rcld", 0xD1, -1, INSTR_TYPE_MODRM, 0, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
-	{ "rcld", 0xD3, -1, INSTR_TYPE_MODRM, 0, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
-	{ "rcld", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "rcrb", 0xD0, -1, INSTR_TYPE_MODRM, 0, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
-	{ "rcrb", 0xD2, -1, INSTR_TYPE_MODRM, 0, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
-	{ "rcrb", 0xC0, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "rcrw", 0xD1, -1, INSTR_TYPE_MODRM, 1, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
-	{ "rcrw", 0xD3, -1, INSTR_TYPE_MODRM, 1, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
-	{ "rcrw", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "rcrd", 0xD1, -1, INSTR_TYPE_MODRM, 0, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
-	{ "rcrd", 0xD3, -1, INSTR_TYPE_MODRM, 0, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
-	{ "rcrd", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "rolb", 0xD0, -1, INSTR_TYPE_MODRM, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
-	{ "rolb", 0xD2, -1, INSTR_TYPE_MODRM, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
-	{ "rolb", 0xC0, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "rolw", 0xD1, -1, INSTR_TYPE_MODRM, 1, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
-	{ "rolw", 0xD3, -1, INSTR_TYPE_MODRM, 1, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
-	{ "rolw", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "rold", 0xD1, -1, INSTR_TYPE_MODRM, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
-	{ "rold", 0xD3, -1, INSTR_TYPE_MODRM, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
-	{ "rold", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "rorb", 0xD0, -1, INSTR_TYPE_MODRM, 0, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
-	{ "rorb", 0xD2, -1, INSTR_TYPE_MODRM, 0, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
-	{ "rorb", 0xC0, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "rorw", 0xD1, -1, INSTR_TYPE_MODRM, 1, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
-	{ "rorw", 0xD3, -1, INSTR_TYPE_MODRM, 1, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
-	{ "rorw", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "rord", 0xD1, -1, INSTR_TYPE_MODRM, 0, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
-	{ "rord", 0xD3, -1, INSTR_TYPE_MODRM, 0, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
-	{ "rord", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	
-	{ "ret", 0xC3, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "ret", 0xC2, -1, INSTR_TYPE_WORD, 0, -1, 1, INSTR_ARG_IMMW, INSTR_ARG_NONE },
-	{ "retf", 0xCB, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "retf", 0xCA, -1, INSTR_TYPE_WORD, 0, -1, 1, INSTR_ARG_IMMW, INSTR_ARG_NONE },
-	{ "retfw", 0xCB, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "retfw", 0xCA, -1, INSTR_TYPE_WORD, 1, -1, 1, INSTR_ARG_IMMW, INSTR_ARG_NONE },
-	{ "retfd", 0xCB, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "retfd", 0xCA, -1, INSTR_TYPE_WORD, 0, -1, 1, INSTR_ARG_IMMW, INSTR_ARG_NONE },
-	
-	{ "sahf", 0x9E, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "salb", 0xD0, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
-	{ "salb", 0xD2, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
-	{ "salb", 0xC0, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "salw", 0xD1, -1, INSTR_TYPE_MODRM, 1, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
-	{ "salw", 0xD3, -1, INSTR_TYPE_MODRM, 1, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
-	{ "salw", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "sald", 0xD1, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
-	{ "sald", 0xD3, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
-	{ "sald", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "sarb", 0xD0, -1, INSTR_TYPE_MODRM, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
-	{ "sarb", 0xD2, -1, INSTR_TYPE_MODRM, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
-	{ "sarb", 0xC0, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "sarw", 0xD1, -1, INSTR_TYPE_MODRM, 1, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
-	{ "sarw", 0xD3, -1, INSTR_TYPE_MODRM, 1, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
-	{ "sarw", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "sard", 0xD1, -1, INSTR_TYPE_MODRM, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
-	{ "sard", 0xD3, -1, INSTR_TYPE_MODRM, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
-	{ "sard", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "shlb", 0xD0, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
-	{ "shlb", 0xD2, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
-	{ "shlb", 0xC0, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "shlw", 0xD1, -1, INSTR_TYPE_MODRM, 1, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
-	{ "shlw", 0xD3, -1, INSTR_TYPE_MODRM, 1, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
-	{ "shlw", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "shld", 0xD1, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
-	{ "shld", 0xD3, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
-	{ "shld", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "shrb", 0xD0, -1, INSTR_TYPE_MODRM, 0, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
-	{ "shrb", 0xD2, -1, INSTR_TYPE_MODRM, 0, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
-	{ "shrb", 0xC0, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "shrw", 0xD1, -1, INSTR_TYPE_MODRM, 1, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
-	{ "shrw", 0xD3, -1, INSTR_TYPE_MODRM, 1, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
-	{ "shrw", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "shrd", 0xD1, -1, INSTR_TYPE_MODRM, 0, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE },
-	{ "shrd", 0xD3, -1, INSTR_TYPE_MODRM, 0, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB },
-	{ "shrd", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	
-	{ "sbb", 0x1C, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB },
-	{ "sbb", 0x1D, -1, INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMW },
-	{ "sbb", 0x1D, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_IMMW },
-	{ "sbbb", 0x80, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "sbbw", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "sbbd", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "sbbw", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMW },
-	{ "sbbd", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMD },
-	{ "sbb", 0x18, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB },
-	{ "sbb", 0x19, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW },
-	{ "sbb", 0x19, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD },
-	{ "sbb", 0x1A, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM },
-	{ "sbb", 0x1B, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
-	{ "sbb", 0x1B, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
-	
-	{ "scasb", 0xAE, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "scasw", 0xAF, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "scasd", 0xAF, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "seta", 0x0F, 0x97, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "setae", 0x0F, 0x93, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "setb", 0x0F, 0x92, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "setbe", 0x0F, 0x96, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "setc", 0x0F, 0x92, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "sete", 0x0F, 0x94, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "setz", 0x0F, 0x94, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "setg", 0x0F, 0x9F, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "setge", 0x0F, 0x9D, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "setl", 0x0F, 0x9C, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "setle", 0x0F, 0x9E, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "setna", 0x0F, 0x96, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "setnae", 0x0F, 0x92, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "setnb", 0x0F, 0x93, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "setnbe", 0x0F, 0x97, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "setnc", 0x0F, 0x93, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "setne", 0x0F, 0x95, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "setng", 0x0F, 0x9E, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "setnge", 0x0F, 0x9C, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "setnl", 0x0F, 0x9D, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "setnle", 0x0F, 0x9F, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "setno", 0x0F, 0x91, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "setnp", 0x0F, 0x9B, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "setns", 0x0F, 0x99, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "setnz", 0x0F, 0x95, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "seto", 0x0F, 0x90, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "setp", 0x0F, 0x9A, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "setpe", 0x0F, 0x9A, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "setpo", 0x0F, 0x9B, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "sets", 0x0F, 0x98, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "setz", 0x0F, 0x94, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	
-	{ "sgdt", 0x0F, 0x01, INSTR_TYPE_MODRM, 0, 0, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "sidt", 0x0F, 0x01, INSTR_TYPE_MODRM, 0, 1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	
-	{ "smsw", 0x0F, 0x01, INSTR_TYPE_MODRM, 0, 4, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	
-	{ "stc", 0xF9, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "std", 0xFD, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "sti", 0xFB, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "stosb", 0xAA, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "stosw", 0xAB, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "stosd", 0xAB, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "str", 0x0F, 0x00, INSTR_TYPE_MODRM, 0, 1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	
-	{ "sub", 0x2C, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB },
-	{ "sub", 0x2D, -1, INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMW },
-	{ "sub", 0x2D, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_IMMW },
-	{ "subb", 0x80, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "subw", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "subd", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "subw", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMW },
-	{ "subd", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMD },
-	{ "sub", 0x28, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB },
-	{ "sub", 0x29, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW },
-	{ "sub", 0x29, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD },
-	{ "sub", 0x2A, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM },
-	{ "sub", 0x2B, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
-	{ "sub", 0x2B, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
-	
-	{ "test", 0xA8, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB },
-	{ "test", 0xA9, -1, INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMW },
-	{ "test", 0xA9, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_IMMW },
-	{ "testb", 0xF6, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "testw", 0xF7, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMW },
-	{ "testd", 0xF7, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMD },
-	{ "testb", 0x84, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB },
-	{ "testw", 0x85, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW },
-	{ "testd", 0x85, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD },
-	
-	{ "verr", 0x0F, 0x00, INSTR_TYPE_MODRM, 0, 4, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "verrw", 0x0F, 0x00, INSTR_TYPE_MODRM, 0, 5, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	
-	{ "wait", 0x9B, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "xchg", 0x90, -1, INSTR_TYPE_OPREGW, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_GREGW },
-	{ "xchg", 0x90, -1, INSTR_TYPE_OPREGW | INSTR_TYPE_LEFT, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_ACCUMW },
-	{ "xchg", 0x90, -1, INSTR_TYPE_OPREGD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_GREGD },
-	{ "xchg", 0x90, -1, INSTR_TYPE_OPREGD | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_ACCUMD },
-	{ "xchg", 0x86, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB },
-	{ "xchg", 0x86, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM },
-	{ "xchg", 0x87, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW },
-	{ "xchg", 0x87, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
-	{ "xchg", 0x87, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD },
-	{ "xchg", 0x87, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
-	
-	{ "xlatb", 0xD7, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "xlat", 0xD7, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
-	{ "xor", 0x34, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB },
-	{ "xor", 0x35, -1, INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMW },
-	{ "xor", 0x35, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_IMMW },
-	{ "xorb", 0x80, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 6, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "xorw", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 6, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "xord", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 6, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
-	{ "xorw", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, 6, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMW },
-	{ "xord", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, 6, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMD },
-	{ "xor", 0x30, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB },
-	{ "xor", 0x31, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW },
-	{ "xor", 0x31, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD },
-	{ "xor", 0x32, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM },
-	{ "xor", 0x33, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM },
-	{ "xor", 0x33, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM }
+	uint32_t arg3;
+} instructions[669] = {
+	{ "aaa", 0x37, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "aad", 0xD5, 0x0A, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "aad", 0xD5, -1, INSTR_TYPE_BYTE, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "aam", 0xD4, 0x0A, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "aam", 0xD5, -1, INSTR_TYPE_BYTE, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "aas", 0x3F, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "adc", 0x14, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "adc", 0x15, -1, INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	{ "adc", 0x15, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "adcb", 0x80, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "adcw", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "adcd", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "adcw", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	{ "adcd", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "adc", 0x10, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB, INSTR_ARG_NONE },
+	{ "adc", 0x11, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW, INSTR_ARG_NONE },
+	{ "adc", 0x11, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD, INSTR_ARG_NONE },
+	{ "adc", 0x12, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "adc", 0x13, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "adc", 0x13, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "adcx", 0x0F, 0xF638, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "add", 0x04, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "add", 0x05, -1, INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	{ "add", 0x05, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "addb", 0x80, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "addw", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "addd", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "addw", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	{ "addd", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "add", 0x00, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB, INSTR_ARG_NONE },
+	{ "add", 0x01, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW, INSTR_ARG_NONE },
+	{ "add", 0x01, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD, INSTR_ARG_NONE },
+	{ "add", 0x02, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "add", 0x03, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "add", 0x03, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "addpd", 0x0F, 0x58, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "addps", 0x0F, 0x58, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "addsd", 0xF2, 0x580F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "addss", 0xF3, 0x580F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "addsubpd", 0x0F, 0xD0, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "addsubps", 0xF2, 0xD00F, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "adox", 0xF3, 0xF6380F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "aesdec", 0x0F, 0xDE38, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "aesdeclast", 0x0F, 0xDF38, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "aesenc", 0x0F, 0xDC38, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "aesenclast", 0x0F, 0xDD38, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "aesimc", 0x0F, 0xDB38, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "aeskeygenassist", 0x0F, 0xDF3A, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, -1, 3, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_IMMB },
+	
+	{ "and", 0x24, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "and", 0x25, -1, INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	{ "and", 0x25, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "andb", 0x80, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "andw", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "andd", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "andw", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	{ "andd", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "and", 0x20, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB, INSTR_ARG_NONE },
+	{ "and", 0x21, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW, INSTR_ARG_NONE },
+	{ "and", 0x21, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD, INSTR_ARG_NONE },
+	{ "and", 0x22, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "and", 0x23, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "and", 0x23, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "andn", 0xE2C4, 0xF278, INSTR_TYPE_MODRM | INSTR_TYPE_OPREGD, 0, -1, 3, INSTR_ARG_GREGD, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
+	
+	{ "andnpd", 0x0F, 0x55, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "andnps", 0x0F, 0x55, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "andpd", 0x0F, 0x54, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "andps", 0x0F, 0x54, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "arpl", 0x63, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW, INSTR_ARG_NONE },
+	
+	{ "bextr", 0xE2C4, 0xF778, INSTR_TYPE_MODRM | INSTR_TYPE_OPREGD | INSTR_TYPE_LEFT, 0, -1, 3, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_GREGD },
+	
+	{ "blendpd", 0x0F, 0x0D3A, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, -1, 3, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_IMMB },
+	{ "blendps", 0x0F, 0x0C3A, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, -1, 3, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_IMMB },
+	{ "blendvpd", 0x0F, 0x1538, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "blendvps", 0x0F, 0x1438, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "blsi", 0xE2C4, 0xF378, INSTR_TYPE_MODRM | INSTR_TYPE_OPREGD, 0, 3, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "blmsk", 0xE2C4, 0xF378, INSTR_TYPE_MODRM | INSTR_TYPE_OPREGD, 0, 2, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "blsr", 0xE2C4, 0xF378, INSTR_TYPE_MODRM | INSTR_TYPE_OPREGD, 0, 1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "bound", 0x62, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "bound", 0x62, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "bsf", 0x0F, 0xBC, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "bsr", 0x0F, 0xBC, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "bsr", 0x0F, 0xBD, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "bsr", 0x0F, 0xBD, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "bswap", 0x0F, 0xC8, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_GREGD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "bt", 0x0F, 0xA3, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "bt", 0x0F, 0xA3, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "btw", 0x0F, 0xBA, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "btd", 0x0F, 0xBA, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	
+	{ "btc", 0x0F, 0xBB, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "btc", 0x0F, 0xBB, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "btcw", 0x0F, 0xBA, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "btcd", 0x0F, 0xBA, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	
+	{ "btr", 0x0F, 0xB3, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "btr", 0x0F, 0xB3, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "btrw", 0x0F, 0xBA, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 6, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "btrd", 0x0F, 0xBA, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 6, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	
+	{ "bts", 0x0F, 0xAB, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "bts", 0x0F, 0xAB, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "btsw", 0x0F, 0xBA, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "btsd", 0x0F, 0xBA, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	
+	{ "bzhi", 0xE2C4, 0xF578, INSTR_TYPE_MODRM | INSTR_TYPE_OPREGD | INSTR_TYPE_LEFT, 0, -1, 3, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_GREGD },
+	
+	{ "call", 0xE8, -1, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "call", 0xFF, -1, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "call", 0x9A, -1, INSTR_TYPE_POINTER, 0, -1, 1, INSTR_ARG_POINTER, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "cbw", 0x98, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "cwde", 0x98, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "clac", 0x0F, 0xCA01, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "clc", 0xF8, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "cld", 0xFC, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "clflush", 0x0F, 0xAE, INSTR_TYPE_MODRM, 0, 7, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "clflushopt", 0x0F, 0xAE, INSTR_TYPE_MODRM, 1, 7, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "cli", 0xFA, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "clts", 0x0F, 0x06, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "clwb", 0x0F, 0xAE, INSTR_TYPE_MODRM, 1, 6, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "cmc", 0xF5, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "cmova", 0x0F, 0x47, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovae", 0x0F, 0x43, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovb", 0x0F, 0x42, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovbe", 0x0F, 0x46, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovc", 0x0F, 0x42, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmove", 0x0F, 0x44, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovz", 0x0F, 0x44, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovg", 0x0F, 0x4F, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovge", 0x0F, 0x4D, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovl", 0x0F, 0x4C, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovle", 0x0F, 0x4E, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovna", 0x0F, 0x46, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovnae", 0x0F, 0x42, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovnb", 0x0F, 0x43, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovnbe", 0x0F, 0x47, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovnc", 0x0F, 0x43, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovne", 0x0F, 0x45, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovng", 0x0F, 0x4E, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovnge", 0x0F, 0x4C, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovnl", 0x0F, 0x4D, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovnle", 0x0F, 0x4F, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovno", 0x0F, 0x41, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovnp", 0x0F, 0x4B, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovns", 0x0F, 0x49, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovnz", 0x0F, 0x45, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovo", 0x0F, 0x40, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovp", 0x0F, 0x4A, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovpe", 0x0F, 0x4A, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovpo", 0x0F, 0x4B, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovs", 0x0F, 0x48, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovz", 0x0F, 0x44, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmova", 0x0F, 0x47, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovae", 0x0F, 0x43, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovb", 0x0F, 0x42, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovbe", 0x0F, 0x46, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovc", 0x0F, 0x42, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmove", 0x0F, 0x44, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovz", 0x0F, 0x44, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovg", 0x0F, 0x4F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovge", 0x0F, 0x4D, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovl", 0x0F, 0x4C, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovle", 0x0F, 0x4E, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovna", 0x0F, 0x46, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovnae", 0x0F, 0x42, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovnb", 0x0F, 0x43, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovnbe", 0x0F, 0x47, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovnc", 0x0F, 0x43, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovne", 0x0F, 0x45, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovng", 0x0F, 0x4E, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovnge", 0x0F, 0x4C, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovnl", 0x0F, 0x4D, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovnle", 0x0F, 0x4F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovno", 0x0F, 0x41, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovnp", 0x0F, 0x4B, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovns", 0x0F, 0x49, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovnz", 0x0F, 0x45, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovo", 0x0F, 0x40, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovp", 0x0F, 0x4A, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovpe", 0x0F, 0x4A, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovpo", 0x0F, 0x4B, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovs", 0x0F, 0x48, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmovz", 0x0F, 0x44, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "cmp", 0x3C, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "cmp", 0x3D, -1, INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	{ "cmp", 0x3D, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "cmpb", 0x80, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "cmpw", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "cmpd", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "cmpw", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	{ "cmpd", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "cmp", 0x38, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB, INSTR_ARG_NONE },
+	{ "cmp", 0x39, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW, INSTR_ARG_NONE },
+	{ "cmp", 0x39, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD, INSTR_ARG_NONE },
+	{ "cmp", 0x3A, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmp", 0x3B, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cmp", 0x3B, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "cmppd", 0x0F, 0xC2, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, -1, 3, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_IMMB },
+	{ "cmpps", 0x0F, 0xC2, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, -1, 3, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_IMMB },
+	
+	{ "cmpsb", 0xA6, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "cmpsw", 0xA7, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "cmpsd", 0xA7, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "cmpsd", 0xF2, 0xC20F, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, -1, 3, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_IMMB },
+	{ "cmpss", 0xF3, 0xC20F, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, -1, 3, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_IMMB },
+	
+	{ "cmpxchg", 0x0F, 0xB0, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB, INSTR_ARG_NONE },
+	{ "cmpxchg", 0x0F, 0xB1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW, INSTR_ARG_NONE },
+	{ "cmpxchg", 0x0F, 0xB1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD, INSTR_ARG_NONE },
+	
+	{ "cmpxchg8b", 0x0F, 0xC7, INSTR_TYPE_MODRM, 0, 1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "comisd", 0x0F, 0x2F, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "comiss", 0x0F, 0x2F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "cpuid", 0x0F, 0xA2, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "crc32b", 0x0FF2, 0xF038, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "crc32w", 0x0FF2, 0xF138, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "crc32d", 0x0FF2, 0xF138, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "cvtdq2pd", 0xF3, 0xE60F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "cvtdq2ps", 0x0F, 0x5B, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "cvtpd2dq", 0xF2, 0xE60F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "cvtpd2ps", 0x0F, 0x5A, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "cvtps2dq", 0x0F, 0x5B, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "cvtps2pd", 0x0F, 0x5A, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "cvtsd2si", 0xF2, 0x2D0F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "cvtsd2ss", 0xF2, 0x5A0F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "cvtsi2sd", 0xF2, 0x2A0F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cvtsi2ss", 0xF3, 0x2A0F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "cvtss2sd", 0xF3, 0x5A0F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "cvtss2si", 0xF3, 0x2D0F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "cvttpd2dq", 0x0F, 0xE6, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "cvttps2dq", 0xF3, 0x5B0F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "cvttsd2si", 0xF2, 0x2C0F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "cvttss2si", 0xF3, 0x2C0F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "cwd", 0x99, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "cdq", 0x99, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "daa", 0x27, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "das", 0x2F, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "dec", 0xFF, -1, INSTR_TYPE_MODRM, 0, 1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "dec", 0x48, -1, INSTR_TYPE_OPREGW, 1, -1, 1, INSTR_ARG_GREGW, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "dec", 0x48, -1, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_GREGD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "div", 0xF6, -1, INSTR_TYPE_MODRM, 0, 6, 2, INSTR_ARG_ACCUMB, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "div", 0xF7, -1, INSTR_TYPE_MODRM, 1, 6, 2, INSTR_ARG_ACCUMW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "div", 0xF7, -1, INSTR_TYPE_MODRM, 0, 6, 2, INSTR_ARG_ACCUMD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "divpd", 0x0F, 0x5E, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "divps", 0x0F, 0x5E, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "divsd", 0xF2, 0x5E0F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "divss", 0xFE, 0x5E0F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "dppd", 0x0F, 0x413A, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, -1, 3, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_IMMB },
+	{ "dpps", 0x0F, 0x403A, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, -1, 3, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_IMMB },
+	
+	{ "enter", 0xC8, -1, INSTR_TYPE_WORD | INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_IMMW, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	
+	{ "extractps", 0x0F, 0x173A, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, -1, 3, INSTR_ARG_MODRM, INSTR_ARG_XREG, INSTR_ARG_IMMB },
+	
+	{ "f2xm1", 0xD9, 0xF0, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fabs", 0xD9, 0xE1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "faddd", 0xD8, -1, INSTR_TYPE_MODRM, 0, 0, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "faddq", 0xDC, -1, INSTR_TYPE_MODRM, 0, 0, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fadd", 0xD8, 0xC0, INSTR_TYPE_OPREGD | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_ST0, INSTR_ARG_STREG, INSTR_ARG_NONE },
+	{ "fadd", 0xDC, 0xC0, INSTR_TYPE_OPREGD, 0, -1, 2, INSTR_ARG_STREG, INSTR_ARG_ST0, INSTR_ARG_NONE },
+	{ "faddp", 0xDE, 0xC0, INSTR_TYPE_OPREGD, 0, -1, 2, INSTR_ARG_STREG, INSTR_ARG_ST0, INSTR_ARG_NONE },
+	{ "faddp", 0xDE, 0xC1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fiaddd", 0xDA, -1, INSTR_TYPE_MODRM, 0, 0, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fiaddw", 0xDE, -1, INSTR_TYPE_MODRM, 0, 0, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "hlt", 0xF4, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "idiv", 0xF6, -1, INSTR_TYPE_MODRM, 0, 7, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "idiv", 0xF7, -1, INSTR_TYPE_MODRM, 1, 7, 2, INSTR_ARG_ACCUMW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "idiv", 0xF7, -1, INSTR_TYPE_MODRM, 0, 7, 2, INSTR_ARG_ACCUMD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "imulb", 0xF6, -1, INSTR_TYPE_MODRM, 0, 5, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "imulw", 0xF7, -1, INSTR_TYPE_MODRM, 0, 6, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "imuld", 0xF7, -1, INSTR_TYPE_MODRM, 0, 6, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "imul", 0x0F, 0xAF, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW, INSTR_ARG_NONE },
+	{ "imul", 0x0F, 0xAF, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD, INSTR_ARG_NONE },
+	{ "imul", 0x6B, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "imul", 0x6B, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "imul", 0x69, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	{ "imul", 0x69, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	
+	{ "in", 0xE4, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "in", 0xE5, -1, INSTR_TYPE_BYTE, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "in", 0xE5, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "in", 0xEC, -1, INSTR_TYPE_NONE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_DESTW, INSTR_ARG_NONE },
+	{ "in", 0xED, -1, INSTR_TYPE_NONE, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_DESTW, INSTR_ARG_NONE },
+	{ "in", 0xED, -1, INSTR_TYPE_NONE, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_DESTW, INSTR_ARG_NONE },
+	
+	{ "inc", 0xFF, -1, INSTR_TYPE_MODRM, 0, 0, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "inc", 0x40, -1, INSTR_TYPE_OPREGW, 1, -1, 1, INSTR_ARG_GREGW, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "inc", 0x40, -1, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_GREGD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "insb", 0x6C, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "insw", 0x6D, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "insd", 0x6D, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "int3", 0xCC, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "int", 0xCD, -1, INSTR_TYPE_BYTE, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "into", 0xCE, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "invd", 0x0F, 0x08, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "invlpg", 0x0F, 0x01, INSTR_TYPE_MODRM, 0, 7, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "iret", 0xCF, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "iretw", 0xCF, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "iretd", 0xCF, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "nja", 0x77, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njae", 0x73, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njb", 0x72, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njbe", 0x76, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njc", 0x72, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njcxz", 0xE3, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njecxz", 0xE3, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "nje", 0x74, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njz", 0x74, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njg", 0x7F, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njge", 0x7D, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njl", 0x7C, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njle", 0x7E, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njna", 0x76, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njnae", 0x72, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njnb", 0x73, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njnbe", 0x77, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njnc", 0x73, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njne", 0x75, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njng", 0x7E, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njnge", 0x7C, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njnl", 0x7D, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njnle", 0x7F, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njno", 0x71, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njnp", 0x7B, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njns", 0x79, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njnz", 0x75, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njo", 0x70, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njp", 0x7A, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njpe", 0x7A, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njpo", 0x7B, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njs", 0x78, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njz", 0x74, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "ja", 0x87, -1, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jae", 0x0F, 0x83, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jb", 0x0F, 0x82, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jbe", 0x0F, 0x86, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jc", 0x0F, 0x82, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "je", 0x0F, 0x84, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jz", 0x0F, 0x84, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jg", 0x0F, 0x8F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jge", 0x0F, 0x8D, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jl", 0x0F, 0x8C, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jle", 0x0F, 0x8E, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jna", 0x0F, 0x86, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jnae", 0x0F, 0x82, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jnb", 0x0F, 0x83, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jnbe", 0x0F, 0x87, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jnc", 0x0F, 0x83, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jne", 0x0F, 0x85, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jng", 0x0F, 0x8E, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jnge", 0x0F, 0x8C, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jnl", 0x0F, 0x8D, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jnle", 0x0F, 0x8F, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jno", 0x0F, 0x81, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jnp", 0x0F, 0x8B, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jns", 0x0F, 0x89, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jnz", 0x0F, 0x85, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jo", 0x0F, 0x80, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jp", 0x0F, 0x8A, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jpe", 0x0F, 0x8A, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jpo", 0x0F, 0x8B, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "js", 0x0F, 0x88, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jz", 0x0F, 0x84, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "njmp", 0xEB, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jmp", 0xE9, -1, INSTR_TYPE_RELD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jmp", 0xFF, -1, INSTR_TYPE_MODRM, 0, 4, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "jmp", 0xEA, -1, INSTR_TYPE_POINTER, 0, -1, 1, INSTR_ARG_POINTER, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "lahf", 0x9F, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "lar", 0x0F, 0x02, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "lar", 0x0F, 0x02, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "lea", 0x8D, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "lea", 0x8D, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "leave", 0xC9, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "lgdt", 0x0F, 0x01, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "lidt", 0x0F, 0x01, INSTR_TYPE_MODRM, 0, 3, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "lds", 0xC5, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "lds", 0xC5, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "lss", 0x0F, 0xB2, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "lss", 0x0F, 0xB2, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "lss", 0xC4, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "lss", 0xC4, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "lfs", 0x0F, 0xB4, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "lfs", 0x0F, 0xB4, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "lgs", 0x0F, 0xB5, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "lgs", 0x0F, 0xB5, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "lldt", 0x0F, 0x00, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "lmsw", 0x0F, 0x01, INSTR_TYPE_MODRM, 0, 6, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "lodsb", 0xAC, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "lodsw", 0xAD, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "lodsd", 0xAD, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "loop", 0xE2, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "loope", 0xE1, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "loopz", 0xE1, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "loopne", 0xE0, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "loopnz", 0xE0, -1, INSTR_TYPE_RELB, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "lsl", 0x0F, 0x03, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "lsl", 0x0F, 0x03, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "ltr", 0x0F, 0x00, INSTR_TYPE_MODRM, 0, 6, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "mov", 0x88, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB, INSTR_ARG_NONE },
+	{ "mov", 0x89, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW, INSTR_ARG_NONE },
+	{ "mov", 0x89, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD, INSTR_ARG_NONE },
+	{ "mov", 0x8A, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "mov", 0x8B, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "mov", 0x8B, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "mov", 0x8C, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_SREG, INSTR_ARG_NONE },
+	{ "mov", 0x8E, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_SREG, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "mov", 0xA0, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_MOFFS, INSTR_ARG_NONE },
+	{ "mov", 0xA1, -1, INSTR_TYPE_DWORD, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_MOFFS, INSTR_ARG_NONE },
+	{ "mov", 0xA1, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_MOFFS, INSTR_ARG_NONE },
+	{ "mov", 0xA2, -1, INSTR_TYPE_DWORD | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_MOFFS, INSTR_ARG_ACCUMB, INSTR_ARG_NONE },
+	{ "mov", 0xA3, -1, INSTR_TYPE_DWORD | INSTR_TYPE_LEFT, 1, -1, 2, INSTR_ARG_MOFFS, INSTR_ARG_ACCUMW, INSTR_ARG_NONE },
+	{ "mov", 0xA3, -1, INSTR_TYPE_DWORD | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_MOFFS, INSTR_ARG_ACCUMD, INSTR_ARG_NONE },
+	{ "mov", 0xB0, -1, INSTR_TYPE_OPREGB | INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "mov", 0xB8, -1, INSTR_TYPE_OPREGW | INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	{ "mov", 0xB8, -1, INSTR_TYPE_OPREGD | INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "movb", 0xC6, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "movw", 0xC7, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	{ "movd", 0xC7, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "mov", 0x0F, 0x20, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_CREG, INSTR_ARG_NONE },
+	{ "mov", 0x0F, 0x22, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_DREG, INSTR_ARG_GREGW, INSTR_ARG_NONE },
+	{ "mov", 0x0F, 0x20, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_CREG, INSTR_ARG_NONE },
+	{ "mov", 0x0F, 0x22, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_DREG, INSTR_ARG_GREGW, INSTR_ARG_NONE },
+	{ "mov", 0x0F, 0x21, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_DREG, INSTR_ARG_NONE },
+	{ "mov", 0x0F, 0x23, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_DREG, INSTR_ARG_GREGD, INSTR_ARG_NONE },
+	{ "mov", 0x0F, 0x24, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_TREG, INSTR_ARG_NONE },
+	{ "mov", 0x0F, 0x26, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_TREG, INSTR_ARG_GREGD, INSTR_ARG_NONE },
+	
+	{ "movsb", 0xA4, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "movsw", 0xA5, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "movsd", 0xA5, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "movsxb", 0x0F, 0xBE, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "movsxb", 0x0F, 0xBE, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "movsxw", 0x0F, 0xBF, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "movzxb", 0x0F, 0xB6, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "movzxb", 0x0F, 0xB6, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "movzxw", 0x0F, 0xB7, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "mul", 0xF6, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_ACCUMB, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "mul", 0xF7, -1, INSTR_TYPE_MODRM, 1, 4, 2, INSTR_ARG_ACCUMW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "mul", 0xF7, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_ACCUMD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "neg", 0xF7, -1, INSTR_TYPE_MODRM, 0, 3, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "nop", 0x90, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "not", 0xF6, -1, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "or", 0x0C, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "or", 0x0D, -1, INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	{ "or", 0x0D, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	{ "orb", 0x80, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "orw", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "ord", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "orw", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	{ "ord", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "or", 0x08, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB, INSTR_ARG_NONE },
+	{ "or", 0x09, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW, INSTR_ARG_NONE },
+	{ "or", 0x09, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD, INSTR_ARG_NONE },
+	{ "or", 0x0A, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "or", 0x0B, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "or", 0x0B, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "out", 0xE6, -1, INSTR_TYPE_BYTE | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_IMMB, INSTR_ARG_ACCUMB, INSTR_ARG_NONE },
+	{ "out", 0xE7, -1, INSTR_TYPE_BYTE | INSTR_TYPE_LEFT, 1, -1, 2, INSTR_ARG_IMMB, INSTR_ARG_ACCUMW, INSTR_ARG_NONE },
+	{ "out", 0xE7, -1, INSTR_TYPE_BYTE | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_IMMB, INSTR_ARG_ACCUMD, INSTR_ARG_NONE },
+	{ "out", 0xEE, -1, INSTR_TYPE_NONE, 0, -1, 2, INSTR_ARG_DESTW, INSTR_ARG_ACCUMB, INSTR_ARG_NONE },
+	{ "out", 0xEF, -1, INSTR_TYPE_NONE, 1, -1, 2, INSTR_ARG_DESTW, INSTR_ARG_ACCUMW, INSTR_ARG_NONE },
+	{ "out", 0xEF, -1, INSTR_TYPE_NONE, 0, -1, 2, INSTR_ARG_DESTW, INSTR_ARG_ACCUMD, INSTR_ARG_NONE },
+	
+	{ "outsb", 0x6E, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "outsw", 0x6F, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "outsd", 0x6F, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "pop", 0x58, -1, INSTR_TYPE_OPREGW, 1, -1, 1, INSTR_ARG_GREGW, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "pop", 0x58, -1, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_GREGD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "popa", 0x61, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "popaw", 0x61, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "popad", 0x61, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "popf", 0x9D, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "popfw", 0x9D, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "popfd", 0x9D, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "push", 0x50, -1, INSTR_TYPE_OPREGW, 1, -1, 1, INSTR_ARG_GREGW, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "push", 0x50, -1, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_GREGD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "push", 0x68, -1, INSTR_TYPE_DWORD, 0, -1, 1, INSTR_ARG_IMMD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "pusha", 0x60, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "pushaw", 0x60, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "pushad", 0x60, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "pushf", 0x9C, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "pushfw", 0x9C, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "pushfd", 0x9C, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "rclb", 0xD0, -1, INSTR_TYPE_MODRM, 0, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE, INSTR_ARG_NONE },
+	{ "rclb", 0xD2, -1, INSTR_TYPE_MODRM, 0, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB, INSTR_ARG_NONE },
+	{ "rclb", 0xC0, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "rclw", 0xD1, -1, INSTR_TYPE_MODRM, 1, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE, INSTR_ARG_NONE },
+	{ "rclw", 0xD3, -1, INSTR_TYPE_MODRM, 1, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB, INSTR_ARG_NONE },
+	{ "rclw", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "rcld", 0xD1, -1, INSTR_TYPE_MODRM, 0, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE, INSTR_ARG_NONE },
+	{ "rcld", 0xD3, -1, INSTR_TYPE_MODRM, 0, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB, INSTR_ARG_NONE },
+	{ "rcld", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "rcrb", 0xD0, -1, INSTR_TYPE_MODRM, 0, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE, INSTR_ARG_NONE },
+	{ "rcrb", 0xD2, -1, INSTR_TYPE_MODRM, 0, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB, INSTR_ARG_NONE },
+	{ "rcrb", 0xC0, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "rcrw", 0xD1, -1, INSTR_TYPE_MODRM, 1, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE, INSTR_ARG_NONE },
+	{ "rcrw", 0xD3, -1, INSTR_TYPE_MODRM, 1, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB, INSTR_ARG_NONE },
+	{ "rcrw", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "rcrd", 0xD1, -1, INSTR_TYPE_MODRM, 0, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE, INSTR_ARG_NONE },
+	{ "rcrd", 0xD3, -1, INSTR_TYPE_MODRM, 0, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB, INSTR_ARG_NONE },
+	{ "rcrd", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "rolb", 0xD0, -1, INSTR_TYPE_MODRM, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE, INSTR_ARG_NONE },
+	{ "rolb", 0xD2, -1, INSTR_TYPE_MODRM, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB, INSTR_ARG_NONE },
+	{ "rolb", 0xC0, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "rolw", 0xD1, -1, INSTR_TYPE_MODRM, 1, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE, INSTR_ARG_NONE },
+	{ "rolw", 0xD3, -1, INSTR_TYPE_MODRM, 1, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB, INSTR_ARG_NONE },
+	{ "rolw", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "rold", 0xD1, -1, INSTR_TYPE_MODRM, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE, INSTR_ARG_NONE },
+	{ "rold", 0xD3, -1, INSTR_TYPE_MODRM, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB, INSTR_ARG_NONE },
+	{ "rold", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "rorb", 0xD0, -1, INSTR_TYPE_MODRM, 0, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE, INSTR_ARG_NONE },
+	{ "rorb", 0xD2, -1, INSTR_TYPE_MODRM, 0, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB, INSTR_ARG_NONE },
+	{ "rorb", 0xC0, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "rorw", 0xD1, -1, INSTR_TYPE_MODRM, 1, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE, INSTR_ARG_NONE },
+	{ "rorw", 0xD3, -1, INSTR_TYPE_MODRM, 1, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB, INSTR_ARG_NONE },
+	{ "rorw", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "rord", 0xD1, -1, INSTR_TYPE_MODRM, 0, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE, INSTR_ARG_NONE },
+	{ "rord", 0xD3, -1, INSTR_TYPE_MODRM, 0, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB, INSTR_ARG_NONE },
+	{ "rord", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	
+	{ "rdmsr", 0x0F, 0x32, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "rdpmc", 0x0F, 0x33, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "rdtsc", 0x0F, 0x31, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "ret", 0xC3, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "ret", 0xC2, -1, INSTR_TYPE_WORD, 0, -1, 1, INSTR_ARG_IMMW, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "retf", 0xCB, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "retf", 0xCA, -1, INSTR_TYPE_WORD, 0, -1, 1, INSTR_ARG_IMMW, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "retfw", 0xCB, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "retfw", 0xCA, -1, INSTR_TYPE_WORD, 1, -1, 1, INSTR_ARG_IMMW, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "retfd", 0xCB, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "retfd", 0xCA, -1, INSTR_TYPE_WORD, 0, -1, 1, INSTR_ARG_IMMW, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "rsm", 0x0F, 0xAA, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "sahf", 0x9E, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "salb", 0xD0, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE, INSTR_ARG_NONE },
+	{ "salb", 0xD2, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB, INSTR_ARG_NONE },
+	{ "salb", 0xC0, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "salw", 0xD1, -1, INSTR_TYPE_MODRM, 1, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE, INSTR_ARG_NONE },
+	{ "salw", 0xD3, -1, INSTR_TYPE_MODRM, 1, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB, INSTR_ARG_NONE },
+	{ "salw", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "sald", 0xD1, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE, INSTR_ARG_NONE },
+	{ "sald", 0xD3, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB, INSTR_ARG_NONE },
+	{ "sald", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "sarb", 0xD0, -1, INSTR_TYPE_MODRM, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE, INSTR_ARG_NONE },
+	{ "sarb", 0xD2, -1, INSTR_TYPE_MODRM, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB, INSTR_ARG_NONE },
+	{ "sarb", 0xC0, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "sarw", 0xD1, -1, INSTR_TYPE_MODRM, 1, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE, INSTR_ARG_NONE },
+	{ "sarw", 0xD3, -1, INSTR_TYPE_MODRM, 1, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB, INSTR_ARG_NONE },
+	{ "sarw", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "sard", 0xD1, -1, INSTR_TYPE_MODRM, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE, INSTR_ARG_NONE },
+	{ "sard", 0xD3, -1, INSTR_TYPE_MODRM, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB, INSTR_ARG_NONE },
+	{ "sard", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "shlb", 0xD0, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE, INSTR_ARG_NONE },
+	{ "shlb", 0xD2, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB, INSTR_ARG_NONE },
+	{ "shlb", 0xC0, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "shlw", 0xD1, -1, INSTR_TYPE_MODRM, 1, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE, INSTR_ARG_NONE },
+	{ "shlw", 0xD3, -1, INSTR_TYPE_MODRM, 1, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB, INSTR_ARG_NONE },
+	{ "shlw", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "shld", 0xD1, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE, INSTR_ARG_NONE },
+	{ "shld", 0xD3, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB, INSTR_ARG_NONE },
+	{ "shld", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 4, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "shrb", 0xD0, -1, INSTR_TYPE_MODRM, 0, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE, INSTR_ARG_NONE },
+	{ "shrb", 0xD2, -1, INSTR_TYPE_MODRM, 0, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB, INSTR_ARG_NONE },
+	{ "shrb", 0xC0, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "shrw", 0xD1, -1, INSTR_TYPE_MODRM, 1, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE, INSTR_ARG_NONE },
+	{ "shrw", 0xD3, -1, INSTR_TYPE_MODRM, 1, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB, INSTR_ARG_NONE },
+	{ "shrw", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "shrd", 0xD1, -1, INSTR_TYPE_MODRM, 0, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE, INSTR_ARG_NONE },
+	{ "shrd", 0xD3, -1, INSTR_TYPE_MODRM, 0, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB, INSTR_ARG_NONE },
+	{ "shrd", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	
+	{ "sbb", 0x1C, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "sbb", 0x1D, -1, INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	{ "sbb", 0x1D, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	{ "sbbb", 0x80, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "sbbw", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "sbbd", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "sbbw", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	{ "sbbd", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, 3, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "sbb", 0x18, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB, INSTR_ARG_NONE },
+	{ "sbb", 0x19, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW, INSTR_ARG_NONE },
+	{ "sbb", 0x19, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD, INSTR_ARG_NONE },
+	{ "sbb", 0x1A, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "sbb", 0x1B, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "sbb", 0x1B, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "scasb", 0xAE, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "scasw", 0xAF, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "scasd", 0xAF, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "seta", 0x0F, 0x97, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "setae", 0x0F, 0x93, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "setb", 0x0F, 0x92, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "setbe", 0x0F, 0x96, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "setc", 0x0F, 0x92, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "sete", 0x0F, 0x94, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "setz", 0x0F, 0x94, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "setg", 0x0F, 0x9F, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "setge", 0x0F, 0x9D, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "setl", 0x0F, 0x9C, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "setle", 0x0F, 0x9E, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "setna", 0x0F, 0x96, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "setnae", 0x0F, 0x92, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "setnb", 0x0F, 0x93, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "setnbe", 0x0F, 0x97, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "setnc", 0x0F, 0x93, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "setne", 0x0F, 0x95, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "setng", 0x0F, 0x9E, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "setnge", 0x0F, 0x9C, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "setnl", 0x0F, 0x9D, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "setnle", 0x0F, 0x9F, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "setno", 0x0F, 0x91, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "setnp", 0x0F, 0x9B, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "setns", 0x0F, 0x99, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "setnz", 0x0F, 0x95, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "seto", 0x0F, 0x90, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "setp", 0x0F, 0x9A, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "setpe", 0x0F, 0x9A, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "setpo", 0x0F, 0x9B, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "sets", 0x0F, 0x98, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "setz", 0x0F, 0x94, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "sgdt", 0x0F, 0x01, INSTR_TYPE_MODRM, 0, 0, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "sidt", 0x0F, 0x01, INSTR_TYPE_MODRM, 0, 1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "smsw", 0x0F, 0x01, INSTR_TYPE_MODRM, 0, 4, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "stc", 0xF9, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "std", 0xFD, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "sti", 0xFB, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "stosb", 0xAA, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "stosw", 0xAB, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "stosd", 0xAB, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "str", 0x0F, 0x00, INSTR_TYPE_MODRM, 0, 1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "sub", 0x2C, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "sub", 0x2D, -1, INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	{ "sub", 0x2D, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	{ "subb", 0x80, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "subw", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "subd", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "subw", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	{ "subd", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, 5, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "sub", 0x28, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB, INSTR_ARG_NONE },
+	{ "sub", 0x29, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW, INSTR_ARG_NONE },
+	{ "sub", 0x29, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD, INSTR_ARG_NONE },
+	{ "sub", 0x2A, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "sub", 0x2B, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "sub", 0x2B, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "sysenter", 0x0F, 0x34, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "sysexit", 0x0F, 0x35, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "test", 0xA8, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "test", 0xA9, -1, INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	{ "test", 0xA9, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	{ "testb", 0xF6, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "testw", 0xF7, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	{ "testd", 0xF7, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, 0, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "testb", 0x84, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB, INSTR_ARG_NONE },
+	{ "testw", 0x85, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW, INSTR_ARG_NONE },
+	{ "testd", 0x85, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD, INSTR_ARG_NONE },
+	
+	{ "ud2", 0x0F, 0x0B, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "verr", 0x0F, 0x00, INSTR_TYPE_MODRM, 0, 4, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "verw", 0x0F, 0x00, INSTR_TYPE_MODRM, 0, 5, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "wait", 0x9B, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "wbinvd", 0x0F, 0x09, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "wrmsr", 0x0F, 0x30, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "xadd", 0x0F, 0xC0, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB, INSTR_ARG_NONE },
+	{ "xadd", 0x0F, 0xC1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW, INSTR_ARG_NONE },
+	{ "xadd", 0x0F, 0xC1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD, INSTR_ARG_NONE },
+	
+	{ "xchg", 0x90, -1, INSTR_TYPE_OPREGW, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_GREGW, INSTR_ARG_NONE },
+	{ "xchg", 0x90, -1, INSTR_TYPE_OPREGW | INSTR_TYPE_LEFT, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_ACCUMW, INSTR_ARG_NONE },
+	{ "xchg", 0x90, -1, INSTR_TYPE_OPREGD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_GREGD, INSTR_ARG_NONE },
+	{ "xchg", 0x90, -1, INSTR_TYPE_OPREGD | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_ACCUMD, INSTR_ARG_NONE },
+	{ "xchg", 0x86, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB, INSTR_ARG_NONE },
+	{ "xchg", 0x86, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "xchg", 0x87, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW, INSTR_ARG_NONE },
+	{ "xchg", 0x87, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "xchg", 0x87, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD, INSTR_ARG_NONE },
+	{ "xchg", 0x87, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "xlatb", 0xD7, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "xlat", 0xD7, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "xor", 0x34, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "xor", 0x35, -1, INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	{ "xor", 0x35, -1, INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	{ "xorb", 0x80, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 6, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "xorw", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 6, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "xord", 0x83, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 6, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "xorw", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, 6, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMW, INSTR_ARG_NONE },
+	{ "xord", 0x81, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, 6, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "xor", 0x30, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB, INSTR_ARG_NONE },
+	{ "xor", 0x31, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW, INSTR_ARG_NONE },
+	{ "xor", 0x31, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD, INSTR_ARG_NONE },
+	{ "xor", 0x32, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "xor", 0x33, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "xor", 0x33, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE }
 };
 
 static void x86_help(void) { }
@@ -684,7 +917,7 @@ static token_t *lexer_new_token(token_t *list, token_t *cur) {
 }
 
 static int x86_find_register(char *name) {
-	for (int i = 0; i < 30; i++) {
+	for (int i = 0; i < 70; i++) {
 		if ((strlen(registers[i]) == strlen(name)) && !strcasecmp(registers[i], name)) {										// Found?
 			return 1;																											// Yes :)
 		}
@@ -870,7 +1103,7 @@ static node_t *parser_parse_address(parser_t *parser, node_t *cur) {
 }
 
 static int x86_find_mnemonic(char *name) {
-	for (int i = 0; i < 257; i++) {
+	for (int i = 0; i < 409; i++) {
 		if ((strlen(mnemonics[i]) == strlen(name)) && !strcasecmp(mnemonics[i], name)) {										// Found?
 			return 1;																											// Yes :)
 		}
@@ -1052,7 +1285,13 @@ static int get_optype(node_t *node) {
 		char *name = ((register_node_t*)node)->name;
 		int found = 0;
 		
-		if (!strcasecmp(name, "eax")) {																							// Accum for dwords?
+		if (!strcasecmp(name, "xmm0")) {																						// XMM0?
+			ret |= (INSTR_ARG_XREG | INSTR_ARG_XMM0);																			// Yes!
+			found = 1;
+		} else if (!strcasecmp(name, "st0")) {																					// ST0?
+			ret |= (INSTR_ARG_STREG | INSTR_ARG_ST0);																			// Yes!
+			found = 1;
+		} else if (!strcasecmp(name, "eax")) {																					// Accum for dwords?
 			ret |= (INSTR_ARG_ACCUMD | INSTR_ARG_GREGD);																		// Yes!
 			found = 1;
 		} else if (!strcasecmp(name, "ax")) {																					// Accum for words?
@@ -1108,6 +1347,41 @@ static int get_optype(node_t *node) {
 				found = 1;
 			}
 		}
+		
+		for (int i = 30; !found && i < 38; i++) {																				// Or a control register
+			if (!strcasecmp(name, registers[i])) {
+				ret |= INSTR_ARG_CREG;
+				found = 1;
+			}
+		}
+		
+		for (int i = 38; !found && i < 46; i++) {																				// Or a debug register
+			if (!strcasecmp(name, registers[i])) {
+				ret |= INSTR_ARG_DREG;
+				found = 1;
+			}
+		}
+		
+		for (int i = 46; !found && i < 54; i++) {																				// Or a test register
+			if (!strcasecmp(name, registers[i])) {
+				ret |= INSTR_ARG_TREG;
+				found = 1;
+			}
+		}
+		
+		for (int i = 54; !found && i < 62; i++) {																				// Or a FPU (ST) register
+			if (!strcasecmp(name, registers[i])) {
+				ret |= INSTR_ARG_STREG;
+				found = 1;
+			}
+		}
+		
+		for (int i = 62; !found && i < 70; i++) {																				// Or a SSE (XMM) register
+			if (!strcasecmp(name, registers[i])) {
+				ret |= INSTR_ARG_XREG;
+				found = 1;
+			}
+		}
 	} else if (node->type == NODE_TYPE_ADDRESS) {																				// Identifier, number or register with the brackets
 		if (node->childs->type == NODE_TYPE_REGISTER || (node->childs->type == NODE_TYPE_POINTER &&
 			node->childs->childs->next->type == NODE_TYPE_REGISTER)) {															// Register?
@@ -1138,7 +1412,13 @@ static uint32_t get_opval(codegen_t *codegen, node_t *node, int size, int rel) {
 	if (node->type == NODE_TYPE_IDENTIFIER) {																					// Identifier (symbol)?
 		codegen_add_relocation(codegen, ((identifier_node_t*)node)->value, sect->name, size, sect->size, -inc);					// Yes, add relocation
 	} else if (node->type == NODE_TYPE_NUMBER) {																				// Number?
-		ret = (uint32_t)(((number_node_t*)node)->value) - inc;																	// Yes
+		uint32_t val = (uint32_t)(((number_node_t*)node)->value) - inc;															// Yes
+		
+		if (rel) {																												// Relative?
+			codegen_add_relocation(codegen, NULL, sect->name, size, sect->size, val);											// Yes
+		} else {
+			ret = (uint32_t)(((number_node_t*)node)->value) - inc;																// Nope
+		}
 	} else if (node->type == NODE_TYPE_POINTER) {																				// Pointer?
 		return get_opval(codegen, node->childs->next, size, rel);																// Yes
 	}
@@ -1149,6 +1429,36 @@ static uint32_t get_opval(codegen_t *codegen, node_t *node, int size, int rel) {
 static int get_sreg(char *name) {
 	for (int i = 0; i < 6; i++) {																								// Search!
 		if (!strcasecmp(name, sregs[i])) {																						// Found?
+			return i;																											// Yes!
+		}
+	}
+	
+	return 0;
+}
+
+static int get_creg(char *name) {
+	for (int i = 0; i < 8; i++) {																								// Search!
+		if (!strcasecmp(name, cregs[i])) {																						// Found?
+			return i;																											// Yes!
+		}
+	}
+	
+	return 0;
+}
+
+static int get_dreg(char *name) {
+	for (int i = 0; i < 8; i++) {																								// Search!
+		if (!strcasecmp(name, dregs[i])) {																						// Found?
+			return i;																											// Yes!
+		}
+	}
+	
+	return 0;
+}
+
+static int get_treg(char *name) {
+	for (int i = 0; i < 8; i++) {																								// Search!
+		if (!strcasecmp(name, tregs[i])) {																						// Found?
 			return i;																											// Yes!
 		}
 	}
@@ -1186,6 +1496,26 @@ static int get_gregd(char *name) {
 	return get_gregw(name);																										// Maybe it's a 16-bits one
 }
 
+static int get_streg(char *name) {
+	for (int i = 0; i < 8; i++) {																								// Search!
+		if (!strcasecmp(name, stregs[i])) {																						// Found?
+			return i;																											// Yes!
+		}
+	}
+	
+	return 0;
+}
+
+static int get_xreg(char *name) {
+	for (int i = 0; i < 8; i++) {																								// Search!
+		if (!strcasecmp(name, xregs[i])) {																						// Found?
+			return i;																											// Yes!
+		}
+	}
+	
+	return 0;
+}
+
 static void x86_write_segover(codegen_t *codegen, node_t *n) {
 	if (n->type != NODE_TYPE_POINTER) {																							// Segment override?
 		return;																													// Nope
@@ -1205,7 +1535,8 @@ static void x86_write_segover(codegen_t *codegen, node_t *n) {
 }
 
 static int x86_write_modrm(codegen_t *codegen, int ex, int reg, int op, node_t *n) {
-	uint8_t ext = (uint8_t)(ex != -1 ? ex << 3 : 0) | (uint8_t)(reg != -1 ? reg << 3 : 0);										// First, get the "extension" that some instructions use
+	int ext = (ex != -1 ? ex << 3 : 0) | (reg != -1 ? ((op & (INSTR_ARG_SREG | INSTR_ARG_CREG | INSTR_ARG_DREG | INSTR_ARG_TREG))
+													? reg : (reg << 3)) : 0);													// First, get the "extension" that some instructions use
 	int ptr = 0;
 	
 	if (n->childs != NULL && n->childs->type == NODE_TYPE_POINTER) {															// Pointer?
@@ -1218,14 +1549,27 @@ static int x86_write_modrm(codegen_t *codegen, int ex, int reg, int op, node_t *
 	}
 	
 	if (op != (INSTR_ARG_MODRM_REG | INSTR_ARG_MODRM_DISP)) {
-		n = !ptr && !(op & (INSTR_ARG_SREG | INSTR_ARG_GREGB | INSTR_ARG_GREGW | INSTR_ARG_GREGD)) ? n->childs : n;
+		n = !ptr && !(op & (INSTR_ARG_SREG | INSTR_ARG_CREG | INSTR_ARG_DREG | INSTR_ARG_TREG |
+							INSTR_ARG_XREG | INSTR_ARG_GREGB | INSTR_ARG_GREGW | INSTR_ARG_GREGD)) ? n->childs : n;
 	}
 	
 	if (op == (INSTR_ARG_MODRM_ADDR | INSTR_ARG_MOFFS)) {																		// Just a number/identifier in the brackets?
 		codegen_write_byte(codegen, ext | 0x05);																				// Yes, write the modr/m byte
 		codegen_write_dword(codegen, get_opval(codegen, n, 4, 0));																// And the value
-	} else if (op & (INSTR_ARG_GREGB | INSTR_ARG_GREGW | INSTR_ARG_GREGD)) {													// Just a register (without the brackets?
-		codegen_write_byte(codegen, ext | get_gregd(((register_node_t*)n)->name) | 0xC0);										// Yes, write the modr/m byte
+	} else if (op & (INSTR_ARG_SREG | INSTR_ARG_CREG | INSTR_ARG_DREG | INSTR_ARG_TREG | INSTR_ARG_XREG | INSTR_ARG_GREGB |
+					 INSTR_ARG_GREGW | INSTR_ARG_GREGD)) {																		// Just a register (without the brackets)?
+		int rreg = (op & INSTR_ARG_SREG) ? get_sreg(((register_node_t*)n)->name) :
+				   ((op & INSTR_ARG_CREG) ? get_creg(((register_node_t*)n)->name) :
+				   ((op & INSTR_ARG_DREG) ? get_dreg(((register_node_t*)n)->name) :
+				   ((op & INSTR_ARG_TREG) ? get_treg(((register_node_t*)n)->name) :
+				   ((op & INSTR_ARG_XREG) ? get_xreg(((register_node_t*)n)->name) :
+				   get_gregd(((register_node_t*)n)->name)))));																	// Yes
+		
+		if (op & (INSTR_ARG_CREG | INSTR_ARG_DREG | INSTR_ARG_TREG)) {															// Control register as second op?
+			rreg <<= 3;																											// Yes
+		}
+		
+		codegen_write_byte(codegen, ext | rreg | 0xC0);																			// Yes, write the modr/m byte
 	} else if (op & INSTR_ARG_SREG) {																							// Segment register?
 		codegen_write_byte(codegen, ext | (get_sreg(((register_node_t*)n)->name) << 3) | 0xC0);									// Yes, write the modr/m byte
 	} else if (op == INSTR_ARG_MODRM_REG) {																						// 32-bits register?
@@ -1268,6 +1612,18 @@ static int x86_write_modrm(codegen_t *codegen, int ex, int reg, int op, node_t *
 	return 1;
 }
 
+static node_t *get_last(node_t* node, int ops) {
+	for (int i = 1; i < ops; i++) {																								// Go to the last node entry
+		node = node->next;
+	}
+	
+	return node;
+}
+
+static int get_lastn(int op1, int op2, int op3, int ops) {
+	return ops == 3 ? op3 : (ops == 2 ? op2 : op1);																				// Just return the last node type
+}
+
 static int x86_gen(codegen_t *codegen, node_t *node) {
 	if (codegen == NULL || node == NULL) {																						// Null pointer check
 		return 0;
@@ -1289,6 +1645,8 @@ static int x86_gen(codegen_t *codegen, node_t *node) {
 	uint32_t ops = count_childs(node->childs);
 	uint32_t bestop1 = 0;
 	uint32_t bestop2 = 0;
+	uint32_t bestop3 = 0;
+	int opcode2 = 0;
 	int opcode = 0;
 	int exists = 0;
 	int found = 0;
@@ -1296,8 +1654,9 @@ static int x86_gen(codegen_t *codegen, node_t *node) {
 	int inst = 0;
 	int op1 = 0;
 	int op2 = 0;
+	int op3 = 0;
 	
-	if (ops > 2) {																												// Too many args (> 2)?
+	if (ops > 3) {																												// Too many args (> 3)?
 		printf("too many operands to the instruction '%s'\n", inod->name);														// ...
 		return -1;
 	} else if (ops == 1) {
@@ -1305,9 +1664,13 @@ static int x86_gen(codegen_t *codegen, node_t *node) {
 	} else if (ops == 2) {
 		op1 = get_optype(node->childs);																							// Get the optype from the first operand
 		op2 = get_optype(node->childs->next);																					// Get the optype from the second operand
+	} else if (ops == 3) {
+		op1 = get_optype(node->childs);																							// Get the optype from the first operand
+		op2 = get_optype(node->childs->next);																					// Get the optype from the second operand
+		op3 = get_optype(node->childs->next->next);																				// Get the optype from the third operand
 	}
 	
-	for (; instc < 503; instc++) {																								// Let's try to find this instruction!
+	for (; instc < 669; instc++) {																								// Let's try to find this instruction!
 		if ((strlen(instructions[instc].name) != strlen(inod->name)) || strcasecmp(instructions[instc].name, inod->name)) {		// Same name?
 			continue;																											// Nope
 		} else {
@@ -1320,6 +1683,9 @@ static int x86_gen(codegen_t *codegen, node_t *node) {
 			continue;
 		} else if (ops == 2 && ((op1 & instructions[instc].arg1) == 0 || (op2 & instructions[instc].arg2) == 0)) {				// We need to check two operands
 			continue;
+		} else if (ops == 3 && ((op1 & instructions[instc].arg1) == 0 || (op2 & instructions[instc].arg2) == 0 ||
+				   				(op3 & instructions[instc].arg3) == 0)) {														// We need to check three operands
+			continue;
 		}
 		
 		if (ops == 0) {
@@ -1328,10 +1694,17 @@ static int x86_gen(codegen_t *codegen, node_t *node) {
 			inst = instc;																										// Yes
 			bestop1 = instructions[instc].arg1 - (op1 & instructions[instc].arg1);
 			bestop2 = instructions[instc].arg2 - (op2 & instructions[instc].arg2);
-		} else if ((ops >= 2 && instructions[instc].arg2 - (op2 & instructions[instc].arg2) < bestop2) || !found) {				// Best one?
+			bestop3 = instructions[instc].arg3 - (op3 & instructions[instc].arg3);
+		} else if (ops >= 2 && instructions[instc].arg2 - (op2 & instructions[instc].arg2) < bestop2) {							// Best one?
 			inst = instc;																										// Yes
 			bestop1 = instructions[instc].arg1 - (op1 & instructions[instc].arg1);
 			bestop2 = instructions[instc].arg2 - (op2 & instructions[instc].arg2);
+			bestop3 = instructions[instc].arg3 - (op3 & instructions[instc].arg3);
+		} else if (ops >= 3 && instructions[instc].arg3 - (op3 & instructions[instc].arg3) < bestop3) {							// Best one?
+			inst = instc;																										// Yes
+			bestop1 = instructions[instc].arg1 - (op1 & instructions[instc].arg1);
+			bestop2 = instructions[instc].arg2 - (op2 & instructions[instc].arg2);
+			bestop3 = instructions[instc].arg3 - (op3 & instructions[instc].arg3);
 		}
 		
 		found = 1;
@@ -1357,36 +1730,74 @@ static int x86_gen(codegen_t *codegen, node_t *node) {
 		x86_write_segover(codegen, node->childs->next->childs);																	// Ok!
 	}
 	
-	if (instructions[inst].optype & INSTR_TYPE_OPREGB) {																		// Add the register to the opcode? (+rb)
-		node_t *n = ops == 2 && (instructions[inst].optype & INSTR_TYPE_LEFT) ? node->childs->next : node->childs;
+	if ((instructions[inst].optype & INSTR_TYPE_OPREGB) && (instructions[inst].postop == -1)) {									// Add the register to the first part of the opcode? (+rb)
+		node_t *n = ops >= 2 && (instructions[inst].optype & INSTR_TYPE_LEFT) ? get_last(node->childs, ops) :
+					(ops >= 3 ? node->childs->next : node->childs);
 		opcode = instructions[inst].opcode + get_gregb(((register_node_t*)n)->name);
-	} else if (instructions[inst].optype & INSTR_TYPE_OPREGW) {																	// Add the register to the opcode? (+rw)
-		node_t *n = ops == 2 && (instructions[inst].optype & INSTR_TYPE_LEFT) ? node->childs->next : node->childs;
+	} else if ((instructions[inst].optype & INSTR_TYPE_OPREGW) && (instructions[inst].postop == -1)) {							// Add the register to the first part of the opcode? (+rw)
+		node_t *n = ops >= 2 && (instructions[inst].optype & INSTR_TYPE_LEFT) ? get_last(node->childs, ops) :
+					(ops >= 3 ? node->childs->next : node->childs);
 		opcode = instructions[inst].opcode + get_gregw(((register_node_t*)n)->name);
-	} else if (instructions[inst].optype & INSTR_TYPE_OPREGD) {																	// Add the register to the opcode? (+rd)
-		node_t *n = ops == 2 && (instructions[inst].optype & INSTR_TYPE_LEFT) ? node->childs->next : node->childs;
-		opcode = instructions[inst].opcode + get_gregd(((register_node_t*)n)->name);
-	} else {																													// Just the opcode
+	} else if ((instructions[inst].optype & INSTR_TYPE_OPREGD) && (instructions[inst].postop == -1)) {							// Add the register to the first part of the opcode? (+rd)
+		node_t *n = ops >= 2 && (instructions[inst].optype & INSTR_TYPE_LEFT) ? get_last(node->childs, ops) :
+					(ops >= 3 ? node->childs->next : node->childs);
+		int opt = ops >= 2 && (instructions[inst].optype & INSTR_TYPE_LEFT) ? get_lastn(op1, op2, op3, ops) :
+					(ops >= 3 ? op2 : op1);
+		opcode = instructions[inst].opcode + ((opt & INSTR_ARG_STREG) ? get_streg(((register_node_t*)n)->name) :
+											  							get_gregd(((register_node_t*)n)->name));
+	} else {																													// Just the first part of the opcode
 		opcode = instructions[inst].opcode;
 	}
 	
-	codegen_write_byte(codegen, opcode);																						// Write the opcode
+	if ((instructions[inst].optype & INSTR_TYPE_OPREGB) && (instructions[inst].postop != -1)) {									// Add the register to the second part of the opcode? (+rb)
+		node_t *n = ops >= 2 && (instructions[inst].optype & INSTR_TYPE_LEFT) ? get_last(node->childs, ops) :
+					(ops >= 3 ? node->childs->next : node->childs);
+		opcode2 = instructions[inst].postop + get_gregb(((register_node_t*)n)->name);
+	} else if ((instructions[inst].optype & INSTR_TYPE_OPREGW) && (instructions[inst].postop != -1)) {							// Add the register to the opcode? (+rw)
+		node_t *n = ops >= 2 && (instructions[inst].optype & INSTR_TYPE_LEFT) ? get_last(node->childs, ops) :
+					(ops >= 3 ? node->childs->next : node->childs);
+		opcode2 = instructions[inst].postop + get_gregw(((register_node_t*)n)->name);
+	} else if ((instructions[inst].optype & INSTR_TYPE_OPREGD) && (instructions[inst].postop != -1)) {							// Add the register to the opcode? (+rd)
+		node_t *n = ops >= 2 && (instructions[inst].optype & INSTR_TYPE_LEFT) ? get_last(node->childs, ops) :
+					(ops >= 3 ? node->childs->next : node->childs);
+		int opt = ops >= 2 && (instructions[inst].optype & INSTR_TYPE_LEFT) ? get_lastn(op1, op2, op3, ops) :
+					(ops >= 3 ? op2 : op1);
+		opcode2 = instructions[inst].postop + ((opt & INSTR_ARG_STREG) ? get_streg(((register_node_t*)n)->name) :
+											  (((uint8_t)instructions[inst].postop) == 0x78 ?
+											   -(get_gregd(((register_node_t*)n)->name) * 8) :
+											   get_gregd(((register_node_t*)n)->name)));
+	} else {																													// Just the second part of the opcode?
+		opcode2 = instructions[inst].postop;
+	}
 	
-	if (instructions[inst].postop != -1) {																						// Two bytes opcode?
-		codegen_write_byte(codegen, instructions[inst].postop);																	// Yes
+	if (opcode <= 0xFF) {																										// Write the first part of the opcode
+		codegen_write_byte(codegen, opcode);
+	} else {
+		codegen_write_word(codegen, opcode);
+	}
+	
+	if (opcode2 != -1 && opcode2 <= 0xFF) {																						// Two bytes opcode?
+		codegen_write_byte(codegen, opcode2);																					// Yes
+	} else if (opcode2 != -1 && opcode2 <= 0xFFFF) {																			// Three bytes opcode?
+		codegen_write_word(codegen, opcode2);																					// Yes
+	} else if (opcode2 != -1 && opcode2 <= 0xFFFFFF) {																			// Four bytes opcode?
+		codegen_write_byte(codegen, (uint8_t)opcode2);																			// Yes
+		codegen_write_word(codegen, (uint16_t)(opcode2 >> 8));
+	} else if (opcode2 != -1) {
+		codegen_write_dword(codegen, opcode2);																					// Five bytes opcode
 	}
 	
 	if (instructions[inst].optype & INSTR_TYPE_RELB) {																			// 1 bytes after the opcode, but the value it's relative to the end of the instr, not absolute
-		codegen_write_byte(codegen, get_opval(codegen, ops == 2 ? node->childs->next : node->childs, 1, 1));
+		codegen_write_byte(codegen, get_opval(codegen, ops >= 2 ? get_last(node->childs, ops) : node->childs, 1, 1));
 	} else if (instructions[inst].optype & INSTR_TYPE_RELW) {																	// 2 bytes after the opcode, but the value it's relative to the end of the instr, not absolute
-		codegen_write_dword(codegen, get_opval(codegen, ops == 2 ? node->childs->next : node->childs, 2, 1));
+		codegen_write_dword(codegen, get_opval(codegen, ops >= 2 ? get_last(node->childs, ops) : node->childs, 2, 1));
 	} else if (instructions[inst].optype & INSTR_TYPE_RELD) {																	// 4 bytes after the opcode, but the value it's relative to the end of the instr, not absolute
-		codegen_write_dword(codegen, get_opval(codegen, ops == 2 ? node->childs->next : node->childs, 4, 1));
+		codegen_write_dword(codegen, get_opval(codegen, ops >= 2 ? get_last(node->childs, ops) : node->childs, 4, 1));
 	} else if (instructions[inst].optype == (INSTR_TYPE_WORD | INSTR_TYPE_BYTE)) {												// 3 bytes after the opcode
 		codegen_write_word(codegen, (uint16_t)get_opval(codegen, node->childs, 2, 0));											// Write!
 		codegen_write_byte(codegen, (uint8_t)get_opval(codegen, node->childs->next, 1, 0));
 	} else if (instructions[inst].optype & INSTR_TYPE_BYTE && !(instructions[inst].optype & INSTR_TYPE_MODRM)) {				// 1 byte after the opcode
-		node_t *args = ops == 2 && !(instructions[inst].optype & INSTR_TYPE_LEFT) ? node->childs->next : node->childs;
+		node_t *args = ops >= 2 && !(instructions[inst].optype & INSTR_TYPE_LEFT) ? get_last(node->childs, ops) : node->childs;
 		
 		if (args->type == NODE_TYPE_ADDRESS) {																					// Moffs?
 			codegen_write_byte(codegen, (uint8_t)get_opval(codegen, args->childs, 1, 0));										// Yeah!
@@ -1394,7 +1805,7 @@ static int x86_gen(codegen_t *codegen, node_t *node) {
 			codegen_write_byte(codegen, (uint8_t)get_opval(codegen, args, 1, 0));												// Nope
 		}
 	} else if (instructions[inst].optype & INSTR_TYPE_WORD && !(instructions[inst].optype & INSTR_TYPE_MODRM)) {				// 2 byte after the opcode
-		node_t *args = ops == 2 && !(instructions[inst].optype & INSTR_TYPE_LEFT) ? node->childs->next : node->childs;
+		node_t *args = ops >= 2 && !(instructions[inst].optype & INSTR_TYPE_LEFT) ? get_last(node->childs, ops) : node->childs;
 		
 		if (args->type == NODE_TYPE_ADDRESS) {																					// Moffs?
 			codegen_write_word(codegen, (uint16_t)get_opval(codegen, args->childs, 2, 0));										// Yeah!
@@ -1402,7 +1813,7 @@ static int x86_gen(codegen_t *codegen, node_t *node) {
 			codegen_write_word(codegen, (uint16_t)get_opval(codegen, args, 2, 0));												// Nope
 		}
 	} else if (instructions[inst].optype & INSTR_TYPE_DWORD && !(instructions[inst].optype & INSTR_TYPE_MODRM)) {				// 4 byte after the opcode
-		node_t *args = ops == 2 && !(instructions[inst].optype & INSTR_TYPE_LEFT) ? node->childs->next : node->childs;
+		node_t *args = ops >= 2 && !(instructions[inst].optype & INSTR_TYPE_LEFT) ? get_last(node->childs, ops) : node->childs;
 		
 		if (args->type == NODE_TYPE_ADDRESS) {																					// Moffs?
 			codegen_write_dword(codegen, get_opval(codegen, args->childs, 4, 0));												// Yeah!
@@ -1410,61 +1821,117 @@ static int x86_gen(codegen_t *codegen, node_t *node) {
 			codegen_write_dword(codegen, get_opval(codegen, args, 4, 0));														// Nope
 		}
 	} else if ((instructions[inst].optype & (INSTR_TYPE_MODRM | INSTR_TYPE_BYTE)) == (INSTR_TYPE_MODRM | INSTR_TYPE_BYTE)) {	// ModR/M + Byte
-		int op = instructions[inst].optype & INSTR_TYPE_LEFT ? op2 : op1;
-		node_t *n1 = ops == 2 && !(instructions[inst].optype & INSTR_TYPE_LEFT) ? node->childs : node->childs->next;
-		node_t *n2 = ops == 2 && !(instructions[inst].optype & INSTR_TYPE_LEFT) ? node->childs->next : node->childs;
+		int op = instructions[inst].optype & INSTR_TYPE_LEFT ? get_lastn(op1, op2, op3, ops) : op1;
+		int reg = -1;
+		node_t *n1 = ops >= 2 && !(instructions[inst].optype & INSTR_TYPE_LEFT) ? node->childs : get_last(node->childs, ops);
+		node_t *n2 = ops >= 2 && !(instructions[inst].optype & INSTR_TYPE_LEFT) ? get_last(node->childs, ops) : node->childs;
 		
-		if (!x86_write_modrm(codegen, instructions[inst].extension, -1, op, n1)) {												// Write the ModR/M
+		if (ops >= 3 && (op1 & (INSTR_ARG_SREG | INSTR_ARG_CREG | INSTR_ARG_DREG | INSTR_ARG_TREG |
+								INSTR_ARG_GREGB | INSTR_ARG_GREGW | INSTR_ARG_GREGD))) {										// Reg first
+			reg = (op1 & INSTR_ARG_SREG) ? get_sreg(((register_node_t*)n1)->name) : 
+				  ((op1 & INSTR_ARG_CREG) ? get_creg(((register_node_t*)n1)->name) :
+				  ((op1 & INSTR_ARG_DREG) ? get_dreg(((register_node_t*)n1)->name) :
+				  ((op1 & INSTR_ARG_TREG) ? get_treg(((register_node_t*)n1)->name) :
+				  get_gregd(((register_node_t*)n1)->name))));																	// Yes
+			n1 = n1->next;																										// The MODR/M is in the next op
+			op = op2;
+		}
+		
+		if (!x86_write_modrm(codegen, instructions[inst].extension, reg, op, n1)) {												// Write the ModR/M
 			printf("invalid operands to the instruction '%s'\n", inod->name);													// Failed :(
 			return 1;
 		}
 		
 		codegen_write_byte(codegen, (uint8_t)get_opval(codegen, n2, 1, 0));														// Write the byte
 	} else if ((instructions[inst].optype & (INSTR_TYPE_MODRM | INSTR_TYPE_WORD)) == (INSTR_TYPE_MODRM | INSTR_TYPE_WORD)) {	// ModR/M + Word
-		int op = instructions[inst].optype & INSTR_TYPE_LEFT ? op2 : op1;
-		node_t *n1 = ops == 2 && !(instructions[inst].optype & INSTR_TYPE_LEFT) ? node->childs : node->childs->next;
-		node_t *n2 = ops == 2 && !(instructions[inst].optype & INSTR_TYPE_LEFT) ? node->childs->next : node->childs;
+		int op = instructions[inst].optype & INSTR_TYPE_LEFT ? get_lastn(op1, op2, op3, ops) : op1;
+		int reg = -1;
+		node_t *n1 = ops >= 2 && !(instructions[inst].optype & INSTR_TYPE_LEFT) ? node->childs : get_last(node->childs, ops);
+		node_t *n2 = ops >= 2 && !(instructions[inst].optype & INSTR_TYPE_LEFT) ? get_last(node->childs, ops) : node->childs;
 		
-		if (!x86_write_modrm(codegen, instructions[inst].extension, -1, op, n1)) {												// Write the ModR/M
+		if (ops >= 3 && (op1 & (INSTR_ARG_SREG | INSTR_ARG_CREG | INSTR_ARG_DREG | INSTR_ARG_TREG | INSTR_ARG_GREGB |
+								INSTR_ARG_GREGW | INSTR_ARG_GREGD))) {															// Reg first
+			reg = (op1 & INSTR_ARG_SREG) ? get_sreg(((register_node_t*)n1)->name) : 
+				  ((op1 & INSTR_ARG_CREG) ? get_creg(((register_node_t*)n1)->name) :
+				  ((op1 & INSTR_ARG_DREG) ? get_dreg(((register_node_t*)n1)->name) :
+				  ((op1 & INSTR_ARG_TREG) ? get_treg(((register_node_t*)n1)->name) :
+				  get_gregd(((register_node_t*)n1)->name))));																	// Yes
+			n1 = n1->next;																										// The MODR/M is in the next op
+			op = op2;
+		}
+		
+		if (!x86_write_modrm(codegen, instructions[inst].extension, reg, op, n1)) {												// Write the ModR/M
 			printf("invalid operands to the instruction '%s'\n", inod->name);													// Failed :(
 			return 1;
 		}
 		
 		codegen_write_word(codegen, (uint16_t)get_opval(codegen, n2, 2, 0));													// Write the word
 	} else if ((instructions[inst].optype & (INSTR_TYPE_MODRM | INSTR_TYPE_DWORD)) == (INSTR_TYPE_MODRM | INSTR_TYPE_DWORD)) {	// ModR/M + DWord
-		int op = instructions[inst].optype & INSTR_TYPE_LEFT ? op2 : op1;
-		node_t *n1 = ops == 2 && !(instructions[inst].optype & INSTR_TYPE_LEFT) ? node->childs : node->childs->next;
-		node_t *n2 = ops == 2 && !(instructions[inst].optype & INSTR_TYPE_LEFT) ? node->childs->next : node->childs;
+		int op = instructions[inst].optype & INSTR_TYPE_LEFT ? get_lastn(op1, op2, op3, ops) : op1;
+		int reg = -1;
+		node_t *n1 = ops >= 2 && !(instructions[inst].optype & INSTR_TYPE_LEFT) ? node->childs : get_last(node->childs, ops);
+		node_t *n2 = ops >= 2 && !(instructions[inst].optype & INSTR_TYPE_LEFT) ? get_last(node->childs, ops) : node->childs;
 		
-		if (!x86_write_modrm(codegen, instructions[inst].extension, -1, op, n1)) {												// Write the ModR/M
+		if (ops >= 3 && (op1 & (INSTR_ARG_SREG | INSTR_ARG_CREG | INSTR_ARG_DREG | INSTR_ARG_TREG | INSTR_ARG_GREGB |
+								INSTR_ARG_GREGW | INSTR_ARG_GREGD))) {															// Reg first
+			reg = (op1 & INSTR_ARG_SREG) ? get_sreg(((register_node_t*)n1)->name) : 
+				  ((op1 & INSTR_ARG_CREG) ? get_creg(((register_node_t*)n1)->name) :
+				  ((op1 & INSTR_ARG_DREG) ? get_dreg(((register_node_t*)n1)->name) :
+				  ((op1 & INSTR_ARG_TREG) ? get_treg(((register_node_t*)n1)->name) :
+				  get_gregd(((register_node_t*)n1)->name))));																	// Yes
+			n1 = n1->next;																										// The MODR/M is in the next op
+			op = op2;
+		}
+		
+		if (!x86_write_modrm(codegen, instructions[inst].extension, reg, op, n1)) {												// Write the ModR/M
 			printf("invalid operands to the instruction '%s'\n", inod->name);													// Failed :(
 			return 1;
 		}
 		
-		codegen_write_word(codegen, (uint32_t)get_opval(codegen, n2, 4, 0));													// Write the dword
-	} else if (instructions[inst].optype == INSTR_TYPE_MODRM) {																	// ModR/M
-		node_t *n = node->childs;
-		int op = op1;
+		codegen_write_dword(codegen, get_opval(codegen, n2, 4, 0));																// Write the dword
+	} else if (instructions[inst].optype & INSTR_TYPE_MODRM) {																	// ModR/M
+		node_t *n = (ops == 3 && (instructions[inst].optype & INSTR_TYPE_LEFT)) ||
+					(instructions[inst].optype & INSTR_TYPE_OPREGD) ? node->childs->next : node->childs;
+		int opa = (ops == 3 && (instructions[inst].optype & INSTR_TYPE_LEFT)) ||
+				  (instructions[inst].optype & INSTR_TYPE_OPREGD) ? op2 : op1;
+		int opb = ops == 3 && !(instructions[inst].optype & INSTR_TYPE_LEFT) ? op3 : op2;
 		int reg = -1;
 		
-		if (op1 & (INSTR_ARG_SREG | INSTR_ARG_GREGB | INSTR_ARG_GREGW | INSTR_ARG_GREGD)) {										// Reg first?
-			reg = (op1 & INSTR_ARG_SREG) ? get_sreg(((register_node_t*)n)->name) : get_gregd(((register_node_t*)n)->name);		// Yes
-			n = n->next;																										// So the MODR/M is in the next op
-			op = op2;
-		} else if (op2 & (INSTR_ARG_SREG | INSTR_ARG_GREGB | INSTR_ARG_GREGW | INSTR_ARG_GREGD)) {								// Reg in the end?
-			reg = (op2 & INSTR_ARG_SREG) ? get_sreg(((register_node_t*)n->next)->name) :
-				   get_gregd(((register_node_t*)n->next)->name);																// Yes
+		if (!(ops == 2 && (instructions[inst].optype & INSTR_TYPE_OPREGD))) {
+			if (opa & (INSTR_ARG_SREG | INSTR_ARG_CREG | INSTR_ARG_DREG | INSTR_ARG_TREG | INSTR_ARG_XREG | INSTR_ARG_GREGB |
+					   INSTR_ARG_GREGW | INSTR_ARG_GREGD)) {																	// Reg first?
+				reg = (opa & INSTR_ARG_SREG) ? get_sreg(((register_node_t*)n)->name) : 
+					  ((opa & INSTR_ARG_CREG) ? get_creg(((register_node_t*)n)->name) :
+					  ((opa & INSTR_ARG_DREG) ? get_dreg(((register_node_t*)n)->name) :
+					  ((opa & INSTR_ARG_TREG) ? get_treg(((register_node_t*)n)->name) :
+					  ((opa & INSTR_ARG_XREG) ? get_xreg(((register_node_t*)n)->name) :
+					  get_gregd(((register_node_t*)n)->name)))));																// Yes
+				n = ops == 3 && (instructions[inst].optype & INSTR_TYPE_LEFT) ? n->next->next : n->next;						// The MODR/M is in the next op
+				opa = ops == 3 && (instructions[inst].optype & INSTR_TYPE_LEFT) ? op3 : (ops == 3 ? op3 : op2);
+			} else if (opb & (INSTR_ARG_SREG | INSTR_ARG_CREG | INSTR_ARG_DREG | INSTR_ARG_TREG | INSTR_ARG_XREG |
+							  INSTR_ARG_GREGB | INSTR_ARG_GREGW | INSTR_ARG_GREGD)) {											// Reg in the end?
+				reg = (opb & INSTR_ARG_SREG) ? get_sreg(((register_node_t*)n->next)->name) : 
+					  ((opb & INSTR_ARG_CREG) ? get_creg(((register_node_t*)n->next)->name) :
+					  ((opb & INSTR_ARG_DREG) ? get_dreg(((register_node_t*)n->next)->name) :
+					  ((opb & INSTR_ARG_TREG) ? get_treg(((register_node_t*)n->next)->name) :
+					  ((opb & INSTR_ARG_XREG) ? get_xreg(((register_node_t*)n->next)->name) :
+					  get_gregd(((register_node_t*)n->next)->name)))));															// Yes
+			}
+
+			if (ops == 3 && (instructions[inst].optype & INSTR_TYPE_LEFT)) {													// *HACK* (i think)
+				reg <<= 1;
+			}
 		}
 		
-		if (!x86_write_modrm(codegen, instructions[inst].extension, reg, op, n)) {												// Write it!
+		if (!x86_write_modrm(codegen, instructions[inst].extension, reg, opa, n)) {												// Write it!
 			printf("invalid operands to the instruction '%s'\n", inod->name);													// Failed :(
 			return 1;
 		}
 	} else if (instructions[inst].optype == INSTR_TYPE_POINTER) {																// Pointer (16:32)
 		codegen_write_dword(codegen, get_opval(codegen, node->childs->childs->next, 4, 0));										// Write the right part
 		codegen_write_word(codegen, (uint16_t)get_opval(codegen, node->childs->childs, 2, 0));									// Write the left part
-	} else if (instructions[inst].optype != INSTR_TYPE_NONE && instructions[inst].optype != INSTR_TYPE_OPREGW &&
-			   instructions[inst].optype != INSTR_TYPE_OPREGD) {
+	} else if (instructions[inst].optype != INSTR_TYPE_NONE && !(instructions[inst].optype & INSTR_TYPE_OPREGW) &&
+			   !(instructions[inst].optype & INSTR_TYPE_OPREGD)) {
 		printf("invalid operands to the instruction '%s'\n", inod->name);														// ...
 		return 1;
 	}

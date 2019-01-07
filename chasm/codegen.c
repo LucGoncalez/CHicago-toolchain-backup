@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 28 of 2018, at 17:15 BRT
-// Last edited on January 02 of 2019, at 15:03 BRT
+// Last edited on January 05 of 2019, at 20:37 BRT
 
 #include <arch.h>
 #include <stdio.h>
@@ -98,7 +98,7 @@ void codegen_write_qword(codegen_t *codegen, uint64_t data) {
 }
 
 void codegen_add_relocation(codegen_t *codegen, char *name, char *sect, uint8_t size, uintptr_t loc, int inc) {
-	if (codegen == NULL || name == NULL || sect == NULL || size == 0) {											// Null pointer check
+	if (codegen == NULL || sect == NULL || size == 0) {															// Null pointer check
 		return;
 	}
 	

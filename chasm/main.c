@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 10:46 BRT
-// Last edited on December 29 of 2018, at 12:22 BRT
+// Last edited on December 29 of 2018, at 21:51 BRT
 
 #include <arch.h>
 #include <stdio.h>
@@ -177,6 +177,13 @@ int main(int argc, char **argv) {
 		parser_free(parser);
 		lexer_free(lexer);
 		return 1;
+	}
+	
+	for (codegen_reloc_t *rel = codegen->relocs; rel != NULL; rel = rel->next) {						// Let's dump all the unresolved relocations!
+		if (!rel->resolved) {																			// Resolved?
+			printf("Relocation: section '%s', offset %ld, name '%s', inc %d\n",
+				   rel->sect, rel->loc, rel->name, rel->increment);										// Nope, print it!
+		}
 	}
 	
 	FILE *out = fopen(output, "wb");																	// Try to open the output file
