@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 17:37 BRT
-// Last edited on January 06 of 2019, at 19:55 BRT
+// Last edited on January 09 of 2019, at 23:56 BRT
 
 #include <arch.h>
 #include <inttypes.h>
@@ -34,7 +34,7 @@ static char *gregsd[8] = { "eax", "ecx", "edx", "ebx", "esp", "ebp", "esi", "edi
 static char *stregs[8] = { "st0", "st1", "st2", "st3", "st4", "st5", "st6", "st7" };
 static char *xregs[8] = { "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7" };
 
-static char *mnemonics[409] = {
+static char *mnemonics[765] = {
 	"aaa", "aad", "aam", "aas", "adc", "adcb", "adcw", "adcd", "adcx", "add", "addb", "addw", "addd",
 	"addpd", "addps", "addsd", "addss", "addsubpd", "addsubps", "adox", "aesdec", "aesdeclast", "aesenc",
 	"aesenclast", "aesimc", "aeskeygenassist", "and", "andb", "andw", "andd", "andn", "andnpd", "andnps",
@@ -48,24 +48,55 @@ static char *mnemonics[409] = {
 	"crc32d", "cvtdq2pd", "cvtdq2ps", "cvtpd2dq", "cvtpd2ps", "cvtps2dq", "cvtps2pd", "cvtsd2si", "cvtsd2ss", "cvtsi2sd",
 	"cvtsi2ss", "cvtss2sd", "cvtss2si", "cvttpd2dq", "cvttps2dq", "cvttsd2si", "cvttss2si", "cwd", "cdq", "daa", "das",
 	"dec", "div", "divpd", "divps", "divsd", "divss", "dppd", "dpps", "enter", "extractps", "f2xm1", "fabs", "fadd",
-	"faddd", "faddq", "faddp", "fiaddd", "fiaddw", "hlt", "idiv", "imul", "imulw", "imuld", "in", "inc", "insb", "insw",
-	"insd", "int3", "int", "into", "invd", "invlpg", "iret", "iretw", "iretd", "nja", "njae", "njb", "njbe", "njc", "njcxz",
+	"faddd", "faddq", "faddp", "fiaddd", "fiaddw", "fbld", "fbstp", "fchs", "fclex", "fnclex", "fcmovb", "fcmove", "fcmovbe",
+	"fcmovu", "fcmovnb", "fcmovne", "fcmovnbe", "fcmovnu", "fcomd", "fcomq", "fcom", "fcompd", "fcompq", "fcomp", "fcompp",
+	"fcomi", "fcomip", "fucomi", "fucomip", "fcos", "fdecstp", "fdivd", "fdivq", "fdiv", "fdivp", "fidivd", "fidivw",
+	"fdivrd", "fdivrq", "fdivr", "fdivrp", "fidivrd", "fidivrw", "ffree", "ficomw", "ficomd", "ficompw", "ficompd", "fildw",
+	"fildd", "fildq", "fincstp", "finit", "fninit", "fistw", "fistd", "fistpw", "fistpd", "fistpq", "fisttpw", "fisttpd",
+	"fisttpq", "fldd", "fldq", "fldt", "fld", "fld1", "fldl2t", "fldl2e", "fldpi", "fldlg2", "fldln2", "fldz", "fldcw",
+	"fldenv", "fmuld", "fmulq", "fmul", "fmulp", "fimuld", "fimulw", "fnop", "fpatan", "fprem", "fprem1", "fptan", "frndint",
+	"frstor", "fsave", "fnsave", "fscale", "fsin", "fsincos", "fsqrt", "fstd", "fstq", "fst", "fstpd", "fstpq", "fstpt",
+	"fstp", "fstcw", "fnstcw", "fstenv", "fnstenv", "fstsw", "fnstsw", "fsubd", "fsubq", "fsub", "fsubp", "fisubd", "fisubw",
+	"fsubrd", "fsubrq", "fsubr", "fsubrp", "fisubrd", "fisubrw", "ftst", "fucom", "fucomp", "fucompp", "fxam", "fxch",
+	"fxrstor", "fxsave", "fxtract", "fyl2x", "fyl2xp1", "haddpd", "haddps", "hlt", "hsubpd", "hsubps", "idivb", "idivw",
+	"idivd", "imul", "imulb", "imulw", "imuld", "in", "inc", "incb", "incw", "incd", "insb", "insw", "insd", "insertps",
+	"int3", "int", "into", "invd", "invlpg", "invpcid", "iret", "iretw", "iretd", "nja", "njae", "njb", "njbe", "njc", "njcxz",
 	"njecxz", "nje", "njz", "njg", "njge", "njl", "njle", "njna", "njnae", "njnb", "njnbe", "njnc", "njne", "njng", "njnge",
-	"njnl", "njnle", "njno", "njnp", "njns", "njnz", "njo", "njp", "njpe","njpo", "njs", "njz", "njmp", "ja", "jae", "jb",
+	"njnl", "njnle", "njno", "njnp", "njns", "njnz", "njo", "njp", "njpe", "njpo", "njs", "njz", "njmp", "ja", "jae", "jb",
 	"jbe", "jc", "jcxz", "jecxz", "je", "jz", "jg", "jge", "jl", "jle", "jna", "jnae", "jnb", "jnbe", "jnc", "jne", "jng",
-	"jnge", "jnl", "jnle", "jno", "jnp", "jns", "jnz", "jo", "jp", "jpe","jpo", "js", "jz", "jmp", "lahf", "lar", "lea",
-	"leave", "lgdt", "lidt", "lds", "lss", "les", "lfs", "lgs", "lldt", "lmsw", "lodsb", "lodsw", "lodsd", "loop", "loope",
-	"loopz", "loopne", "loopnz", "lsl", "ltr", "mov", "movb", "movw", "movd", "movsb", "movsw", "movsd", "movsxb", "movsxw",
-	"movzxb", "movzxw", "mul", "neg", "nop", "not", "or", "orb", "orw", "ord", "out", "outsb", "outsw", "outsd", "pop",
-	"popa", "popaw", "popad", "popf", "popfw", "popfd", "push", "pusha", "pushaw", "pushad", "pushf", "pushfw", "pushfd",
-	"rclb", "rclw", "rcld", "rcrb", "rcrw", "rcrd", "rolb", "rolw", "rold", "rorb", "rorw", "rord", "rdmsr", "rdpmc",
-	"rdtsc", "ret", "retf", "retfw", "retfd", "rsm", "sahf", "salb", "salw", "sald", "sarb", "sarw", "sard", "shlb", "shlw",
-	"shld", "shrb", "shrw", "shrd", "sbb", "sbbb", "sbbw", "sbbd", "scasb", "scasw", "scasd", "seta", "setae", "setb",
-	"setbe", "setc", "sete", "setg", "setge", "setl", "setle", "setna", "setnae", "setnb", "setnbe", "setnc", "setne",
-	"setng", "setnge", "setnl", "setnle", "setno", "setnp", "setns", "setnz", "seto", "setp", "setpe", "setpo", "sets",
-	"setz", "sgdt", "sidt", "smsw", "stc", "std", "sti", "stosb", "stosw", "stosd", "str", "sub", "subb", "subw", "subd",
-	"sysenter", "sysexit", "test", "testb", "testw", "testd", "ud2", "verr", "verw", "wait", "wbinvd", "wrmsr", "xadd",
-	"xchg", "xlatb", "xlat", "xor", "xorb", "xorw", "xord"
+	"jnge", "jnl", "jnle", "jno", "jnp", "jns", "jnz", "jo", "jp", "jpe", "jpo", "js", "jz", "jmp", "lahf", "lar", "lddqu",
+	"ldmxcsr", "lea", "leave", "lfence", "lgdt", "lidt", "lds", "lss", "les", "lfs", "lgs", "lldt", "lmsw", "lodsb", "lodsw",
+	"lodsd", "loop", "loope", "loopz", "loopne", "loopnz", "lsl", "ltr", "lzcnt", "maskmovdqu", "maxpd", "maxps", "maxsd",
+	"maxss", "mfence", "minpd", "minps", "minsd", "minss", "monitor", "mov", "movb", "movw", "movd", "movapd", "movaps",
+	"movbe", "movd", "movddup", "movdqa", "movdqu", "movhlps", "movlhps", "movhpd", "movhps", "movlpd", "movlps", "movmskpd",
+	"movmskps", "movntdqa", "movntdq", "movnti", "movntpd", "movntps", "movq", "movsb", "movsw", "movsd", "movsd", "movss",
+	"movshdup", "movsldup", "movsxb", "movsxw", "movupd", "movups", "movzxb", "movzxw", "mpsadbw", "mul", "mulpd", "mulps",
+	"mulsd", "mulss", "mulx", "mwait", "neg", "nop", "not", "or", "orb", "orw", "ord", "orpd", "orps", "out", "outsb",
+	"outsw", "outsd", "pabsb", "pabsw", "pabsd", "packsswb", "packssdw", "packuswb", "packusdw", "paddb", "paddw", "paddd",
+	"paddsb", "paddsw", "paddusb", "paddusw", "palignr", "pand", "pandn", "pause", "pavgb", "pavgw", "pblendvb", "pblendw",
+	"pclmulqdq", "pcmpeqb", "pcmpeqw", "pcmpeqd", "pcmpdqq", "pcmpestri", "pcmpestrm", "pcmpgtb", "pcmpgtw", "pcmpgtd",
+	"pcmpgtq", "pcmpistri", "pcmpistrm", "pextrb", "pextrw", "pextrd", "phaddw", "phaddd",
+	"phaddsw", "phminposuw", "phsubw", "phsubd", "phsubsw", "pinsrb", "pinsrw", "pinsrd", "pmaddubsw", "pmaddwd",
+	"pmaxsb", "pmaxsw", "pmaxsd", "pmaxub", "pmaxuw", "pmaxud", "pminsb", "pminsw", "pminsd",
+	"pminub", "pminuw", "pminud", "pmovmskb", "pmovsxbw", "pmovsxbd", "pmovsxbq", "pmovsxwd", "pmovsxwq", "pmovsxdq", "pmovzxbw", "pmovzxbd", "pmovzxbq", "pmovszwd", "pmovszwq", "pmovzxdq",
+	"pmuldq", "pmulhrsw", "pmulhuw", "pmulhw", "pmullw", "pmulld", "pmuludq", "pop", "popa", "popaw", "popad",
+	"popcnt", "popf", "popfw", "popfd", "por", "prefetcht0", "prefetcht1", "prefetcht2", "prefetchnta", "prefetchw",
+	"psadbw", "psignb", "psignw", "psignd", "pslldq", "psllw", "pslld",
+	"psllq", "psraw", "psrad", "psrldq", "psrlw", "psrld", "psrlq", "psubb", "psubw", "psubd", "psubq", "psubsb", "psubsw",
+	"psubusb", "psubusw", "ptest", "punpckhbw", "punpckhwd", "punpckhqdq", "punpcklbw", "punpcklwd", "punpckldq",
+	"punpcklqdq", "push", "pusha", "pushaw", "pushad", "pushf", "pushfw", "pushfd", "pxor", "rclb", "rclw", "rcld", "rcrb",
+	"rcrw", "rcrd", "rolb", "rolw", "rold", "rorb", "rorw", "rord", "rcpps", "rcpss", "rdmsr", "rdpid", "rdpkru", "rdpmc",
+	"rdrand", "rdseed", "rdtsc", "rdtscp", "ret", "retf", "retfw", "retfd", "roundpd", "roundps", "roundsd",
+	"roundss", "rsm", "rsqrtps", "rsqrtss", "sahf", "salb", "salw", "sald", "sarb", "sarw", "sard", "shlb", "shlw", "shld",
+	"shrb", "shrw", "shrd", "sbb", "sbbb", "sbbw", "sbbd", "scasb", "scasw", "scasd", "seta", "setae",
+	"setb", "setbe", "setc", "sete", "setg", "setge", "setl", "setle", "setna",  "setnae", "setnb", "setnbe", "setnc", "setne",
+	"setng", "setnge", "setnl", "setnle", "setno", "setnp", "setns", "setnz", "seto", "setp", "setpe", "setpo", "sets", "setz",
+	"sfence", "sgdt", "sidt", "sldt", "sha1rnds4", "sha1nexte", "sha1msg1", "sha1msg2", "sha256rnds2", "sha256msg1",
+	"sha256msg2", "shld", "shrd", "shufpd", "shufps", "smsw", "sqrtpd", "sqrtps", "sqrtsd", "sqrtss", "stac", "stc", "std",
+	"sti", "stmxcsr", "stosb", "stosw", "stosd", "str", "sub", "subb", "subw", "subd", "subpd", "subps", "subsd", "subss",
+	"sysenter", "sysexit", "test", "testb", "testw", "testd", "tzcnt", "ucomisd", "ucomiss", "ud0", "ud1", "ud2", "unpckhpd",
+	"unpckhps", "unpcklpd", "unpcklps", "verr", "verw", "wait", "wbinvd", "wrmsr", "wrpkru", "xadd", "xchg", "xlatb", "xlat",
+	"xor", "xorb", "xorw", "xord", "xorpd", "xorps"
 };
 
 struct {
@@ -79,7 +110,7 @@ struct {
 	uint32_t arg1;
 	uint32_t arg2;
 	uint32_t arg3;
-} instructions[669] = {
+} instructions[1079] = {
 	{ "aaa", 0x37, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
 	{ "aad", 0xD5, 0x0A, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
@@ -153,7 +184,6 @@ struct {
 	{ "and", 0x22, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	{ "and", 0x23, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	{ "and", 0x23, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	
 	{ "andn", 0xE2C4, 0xF278, INSTR_TYPE_MODRM | INSTR_TYPE_OPREGD, 0, -1, 3, INSTR_ARG_GREGD, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
 	
 	{ "andnpd", 0x0F, 0x55, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
@@ -394,21 +424,219 @@ struct {
 	{ "fiaddd", 0xDA, -1, INSTR_TYPE_MODRM, 0, 0, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "fiaddw", 0xDE, -1, INSTR_TYPE_MODRM, 0, 0, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
+	{ "fbld", 0xDF, -1, INSTR_TYPE_MODRM, 0, 4, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fbstp", 0xDF, -1, INSTR_TYPE_MODRM, 0, 6, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fchs", 0xD9, 0xE0, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fclex", 0x9B, 0xDBE2, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fnclex", 0xDB, 0xE2, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fcmovb", 0xDA, 0xC0, INSTR_TYPE_OPREGD | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_ST0, INSTR_ARG_STREG, INSTR_ARG_NONE },
+	{ "fcmove", 0xDA, 0xC8, INSTR_TYPE_OPREGD | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_ST0, INSTR_ARG_STREG, INSTR_ARG_NONE },
+	{ "fcmovbe", 0xDA, 0xD0, INSTR_TYPE_OPREGD | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_ST0, INSTR_ARG_STREG, INSTR_ARG_NONE },
+	{ "fcmovu", 0xDA, 0xD8, INSTR_TYPE_OPREGD | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_ST0, INSTR_ARG_STREG, INSTR_ARG_NONE },
+	{ "fcmovnb", 0xDB, 0xC0, INSTR_TYPE_OPREGD | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_ST0, INSTR_ARG_STREG, INSTR_ARG_NONE },
+	{ "fcmovne", 0xDB, 0xC8, INSTR_TYPE_OPREGD | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_ST0, INSTR_ARG_STREG, INSTR_ARG_NONE },
+	{ "fcmovnbe", 0xDB, 0xD0, INSTR_TYPE_OPREGD | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_ST0, INSTR_ARG_STREG, INSTR_ARG_NONE },
+	{ "fcmovnu", 0xDB, 0xD8, INSTR_TYPE_OPREGD | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_ST0, INSTR_ARG_STREG, INSTR_ARG_NONE },
+	
+	{ "fcomd", 0xD8, -1, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fcomq", 0xDC, -1, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fcom", 0xD8, 0xD0, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_STREG, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fcom", 0xD8, 0xD1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fcompd", 0xD8, -1, INSTR_TYPE_MODRM, 0, 3, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fcompq", 0xDC, -1, INSTR_TYPE_MODRM, 0, 3, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fcomp", 0xD8, 0xD8, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_STREG, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fcomp", 0xD8, 0xD9, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fcompp", 0xDE, 0xD9, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fcomi", 0xDB, 0xF0, INSTR_TYPE_OPREGD | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_ST0, INSTR_ARG_STREG, INSTR_ARG_NONE },
+	{ "fcomip", 0xDF, 0xF0, INSTR_TYPE_OPREGD | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_ST0, INSTR_ARG_STREG, INSTR_ARG_NONE },
+	{ "fucomi", 0xDB, 0xE8, INSTR_TYPE_OPREGD | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_ST0, INSTR_ARG_STREG, INSTR_ARG_NONE },
+	{ "fucomip", 0xDF, 0xE8, INSTR_TYPE_OPREGD | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_ST0, INSTR_ARG_STREG, INSTR_ARG_NONE },
+	
+	{ "fcos", 0xD9, 0xFF, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fdecstp", 0xD9, 0xF6, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fdivd", 0xD8, -1, INSTR_TYPE_MODRM, 0, 6, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fdivq", 0xDC, -1, INSTR_TYPE_MODRM, 0, 6, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fdiv", 0xD8, 0xF0, INSTR_TYPE_OPREGD | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_ST0, INSTR_ARG_STREG, INSTR_ARG_NONE },
+	{ "fdiv", 0xDC, 0xF8, INSTR_TYPE_OPREGD, 0, -1, 2, INSTR_ARG_STREG, INSTR_ARG_ST0, INSTR_ARG_NONE },
+	{ "fdivp", 0xDE, 0xF8, INSTR_TYPE_OPREGD, 0, -1, 2, INSTR_ARG_STREG, INSTR_ARG_ST0, INSTR_ARG_NONE },
+	{ "fdivp", 0xDE, 0xF8, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fidivd", 0xDA, -1, INSTR_TYPE_MODRM, 0, 6, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fidivw", 0xDE, -1, INSTR_TYPE_MODRM, 0, 6, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fdivrd", 0xD8, -1, INSTR_TYPE_MODRM, 0, 7, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fdivrq", 0xDC, -1, INSTR_TYPE_MODRM, 0, 7, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fdivr", 0xD8, 0xF8, INSTR_TYPE_OPREGD | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_ST0, INSTR_ARG_STREG, INSTR_ARG_NONE },
+	{ "fdivr", 0xDC, 0xF0, INSTR_TYPE_OPREGD, 0, -1, 2, INSTR_ARG_STREG, INSTR_ARG_ST0, INSTR_ARG_NONE },
+	{ "fdivrp", 0xDE, 0xF0, INSTR_TYPE_OPREGD, 0, -1, 2, INSTR_ARG_STREG, INSTR_ARG_ST0, INSTR_ARG_NONE },
+	{ "fdivrp", 0xDE, 0xF1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fidivrd", 0xDA, -1, INSTR_TYPE_MODRM, 0, 7, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fidivrw", 0xDE, -1, INSTR_TYPE_MODRM, 0, 7, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "ffree", 0xDD, 0xC0, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_STREG, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "ficomw", 0xDE, -1, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "ficomd", 0xDA, -1, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "ficompw", 0xDE, -1, INSTR_TYPE_MODRM, 0, 3, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "ficompd", 0xDA, -1, INSTR_TYPE_MODRM, 0, 3, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fildw", 0xDF, -1, INSTR_TYPE_MODRM, 0, 0, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fildd", 0xDB, -1, INSTR_TYPE_MODRM, 0, 0, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fildq", 0xDF, -1, INSTR_TYPE_MODRM, 0, 5, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fincstp", 0xD9, 0xF7, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "finit", 0x9B, 0xE3DB, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fninit", 0xDB, 0xE3, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fistw", 0xDF, -1, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fistd", 0xDB, -1, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fistpw", 0xDF, -1, INSTR_TYPE_MODRM, 0, 3, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fistpd", 0xDB, -1, INSTR_TYPE_MODRM, 0, 3, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fistpq", 0xDF, -1, INSTR_TYPE_MODRM, 0, 7, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fisttpw", 0xDF, -1, INSTR_TYPE_MODRM, 0, 1, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fisttpd", 0xDB, -1, INSTR_TYPE_MODRM, 0, 1, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fisttpq", 0xDD, -1, INSTR_TYPE_MODRM, 0, 1, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fldd", 0xD9, -1, INSTR_TYPE_MODRM, 0, 0, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fldq", 0xDD, -1, INSTR_TYPE_MODRM, 0, 0, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fldt", 0xDB, -1, INSTR_TYPE_MODRM, 0, 5, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fld", 0xD9, 0xC0, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_STREG, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fld1", 0xD9, 0xE8, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fldl2t", 0xD9, 0xE9, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fldl2e", 0xD9, 0xEA, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fldpi", 0xD9, 0xEB, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fldlg2", 0xD9, 0xEC, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fldln2", 0xD9, 0xED, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fldz", 0xD9, 0xEE, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fldcw", 0xD9, -1, INSTR_TYPE_MODRM, 0, 5, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fldenv", 0xD9, -1, INSTR_TYPE_MODRM, 0, 4, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fmuld", 0xD8, -1, INSTR_TYPE_MODRM, 0, 1, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fmulq", 0xDC, -1, INSTR_TYPE_MODRM, 0, 1, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fmul", 0xD8, 0xC8, INSTR_TYPE_OPREGD | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_ST0, INSTR_ARG_STREG, INSTR_ARG_NONE },
+	{ "fmul", 0xDC, 0xC8, INSTR_TYPE_OPREGD, 0, -1, 2, INSTR_ARG_STREG, INSTR_ARG_ST0, INSTR_ARG_NONE },
+	{ "fmulp", 0xDE, 0xC8, INSTR_TYPE_OPREGD, 0, -1, 2, INSTR_ARG_STREG, INSTR_ARG_ST0, INSTR_ARG_NONE },
+	{ "fmulp", 0xDE, 0xC9, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fimuld", 0xDA, -1, INSTR_TYPE_MODRM, 0, 1, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fimulw", 0xDE, -1, INSTR_TYPE_MODRM, 0, 1, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fnop", 0xD9, 0xD0, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fpatan", 0xD9, 0xF3, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fprem", 0xD9, 0xF8, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fprem1", 0xD9, 0xF5, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fptan", 0xD9, 0xF2, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "frndint", 0xD9, 0xFC, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "frstor", 0xDD, -1, INSTR_TYPE_MODRM, 0, 4, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fsave", 0x9B, 0xDD, INSTR_TYPE_MODRM, 0, 6, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fnsave", 0xDD, -1, INSTR_TYPE_MODRM, 0, 6, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fscale", 0xD9, 0xFD, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fsin", 0xD9, 0xFE, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fsincos", 0xD9, 0xFB, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fsqrt", 0xD9, 0xFA, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fstd", 0xD9, -1, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fstq", 0xDD, -1, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fst", 0xDD, 0xD0, INSTR_TYPE_OPREGD, 0, -1, 2, INSTR_ARG_STREG, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fstpd", 0xD9, -1, INSTR_TYPE_MODRM, 0, 3, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fstpq", 0xDD, -1, INSTR_TYPE_MODRM, 0, 3, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fstpt", 0xDB, -1, INSTR_TYPE_MODRM, 0, 7, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fstp", 0xDD, 0xD8, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_STREG, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fstcw", 0x9B, 0xD9, INSTR_TYPE_MODRM, 0, 7, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fnstcw", 0xD9, -1, INSTR_TYPE_MODRM, 0, 7, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fstenv", 0x9B, 0xD9, INSTR_TYPE_MODRM, 0, 6, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fnstenv", 0xD9, -1, INSTR_TYPE_MODRM, 0, 6, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fstsw", 0x9B, 0xDD, INSTR_TYPE_MODRM, 0, 7, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fstsw", 0X9B, 0xE0DF, INSTR_TYPE_NONE, 0, -1, 1, INSTR_ARG_ACCUMW, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fnstsw", 0xDD, -1, INSTR_TYPE_MODRM, 0, 7, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fnstsw", 0xDF, 0xE0, INSTR_TYPE_NONE, 0, -1, 1, INSTR_ARG_ACCUMW, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fsubd", 0xD8, -1, INSTR_TYPE_MODRM, 0, 4, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fsubq", 0xDC, -1, INSTR_TYPE_MODRM, 0, 4, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fsub", 0xD8, 0xE0, INSTR_TYPE_OPREGD | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_ST0, INSTR_ARG_STREG, INSTR_ARG_NONE },
+	{ "fsub", 0xDC, 0xE8, INSTR_TYPE_OPREGD, 0, -1, 2, INSTR_ARG_STREG, INSTR_ARG_ST0, INSTR_ARG_NONE },
+	{ "fsubp", 0xDE, 0xE8, INSTR_TYPE_OPREGD, 0, -1, 2, INSTR_ARG_STREG, INSTR_ARG_ST0, INSTR_ARG_NONE },
+	{ "fsubp", 0xDE, 0xE9, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fisubd", 0xDA, -1, INSTR_TYPE_MODRM, 0, 4, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fisubw", 0xDE, -1, INSTR_TYPE_MODRM, 0, 4, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fsubrd", 0xD8, -1, INSTR_TYPE_MODRM, 0, 5, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fsubrq", 0xDC, -1, INSTR_TYPE_MODRM, 0, 5, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fsubr", 0xD8, 0xE8, INSTR_TYPE_OPREGD | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_ST0, INSTR_ARG_STREG, INSTR_ARG_NONE },
+	{ "fsubr", 0xDC, 0xE0, INSTR_TYPE_OPREGD, 0, -1, 2, INSTR_ARG_STREG, INSTR_ARG_ST0, INSTR_ARG_NONE },
+	{ "fsubrp", 0xDE, 0xE0, INSTR_TYPE_OPREGD, 0, -1, 2, INSTR_ARG_STREG, INSTR_ARG_ST0, INSTR_ARG_NONE },
+	{ "fsubrp", 0xDE, 0xE1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fisubrd", 0xDA, -1, INSTR_TYPE_MODRM, 0, 5, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fisubrw", 0xDE, -1, INSTR_TYPE_MODRM, 0, 5, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "ftst", 0xD9, 0xE4, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fucom", 0xDD, 0xE0, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_STREG, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fucom", 0xDD, 0xE1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fucomp", 0xDD, 0xE8, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_STREG, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fucomp", 0xDD, 0xE9, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fucompp", 0xDA, 0xE9, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fxam", 0xD9, 0xE5, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fxch", 0xD9, 0xC8, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_STREG, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "fxch", 0xD9, 0xC9, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fxrstor", 0x0F, 0xAE, INSTR_TYPE_MODRM, 0, 1, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fxsave", 0x0F, 0xAE, INSTR_TYPE_MODRM, 0, 0, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fxtract", 0xD9, 0xF4, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fyl2x", 0xD9, 0xF1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "fyl2xp1", 0xD9, 0xF9, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "haddpd", 0x0F, 0x7C, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "haddps", 0xF2, 0x7C0F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
 	{ "hlt", 0xF4, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "idiv", 0xF6, -1, INSTR_TYPE_MODRM, 0, 7, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "idiv", 0xF7, -1, INSTR_TYPE_MODRM, 1, 7, 2, INSTR_ARG_ACCUMW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "idiv", 0xF7, -1, INSTR_TYPE_MODRM, 0, 7, 2, INSTR_ARG_ACCUMD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "hsubpd", 0x0F, 0x7D, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "hsubps", 0xF2, 0x7D0F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "idivb", 0xF6, -1, INSTR_TYPE_MODRM, 0, 7, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "idivw", 0xF7, -1, INSTR_TYPE_MODRM, 1, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "idivd", 0xF7, -1, INSTR_TYPE_MODRM, 0, 7, 2, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
 	{ "imulb", 0xF6, -1, INSTR_TYPE_MODRM, 0, 5, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "imulw", 0xF7, -1, INSTR_TYPE_MODRM, 0, 6, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "imuld", 0xF7, -1, INSTR_TYPE_MODRM, 0, 6, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "imul", 0x0F, 0xAF, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW, INSTR_ARG_NONE },
-	{ "imul", 0x0F, 0xAF, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD, INSTR_ARG_NONE },
-	{ "imul", 0x6B, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "imul", 0x6B, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_IMMB, INSTR_ARG_NONE },
-	{ "imul", 0x69, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_IMMW, INSTR_ARG_NONE },
-	{ "imul", 0x69, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_IMMD, INSTR_ARG_NONE },
+	{ "imulw", 0xF7, -1, INSTR_TYPE_MODRM, 1, 5, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "imuld", 0xF7, -1, INSTR_TYPE_MODRM, 0, 5, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "imul", 0x0F, 0xAF, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "imul", 0x0F, 0xAF, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "imul", 0x6B, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, -1, 3, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "imul", 0x6B, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, -1, 3, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_IMMB },
+	{ "imul", 0x69, -1, INSTR_TYPE_MODRM | INSTR_TYPE_WORD, 1, -1, 3, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_IMMW },
+	{ "imul", 0x69, -1, INSTR_TYPE_MODRM | INSTR_TYPE_DWORD, 0, -1, 3, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_IMMD },
 	
 	{ "in", 0xE4, -1, INSTR_TYPE_BYTE, 0, -1, 2, INSTR_ARG_ACCUMB, INSTR_ARG_IMMB, INSTR_ARG_NONE },
 	{ "in", 0xE5, -1, INSTR_TYPE_BYTE, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_IMMB, INSTR_ARG_NONE },
@@ -417,13 +645,17 @@ struct {
 	{ "in", 0xED, -1, INSTR_TYPE_NONE, 1, -1, 2, INSTR_ARG_ACCUMW, INSTR_ARG_DESTW, INSTR_ARG_NONE },
 	{ "in", 0xED, -1, INSTR_TYPE_NONE, 0, -1, 2, INSTR_ARG_ACCUMD, INSTR_ARG_DESTW, INSTR_ARG_NONE },
 	
-	{ "inc", 0xFF, -1, INSTR_TYPE_MODRM, 0, 0, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "incb", 0xFE, -1, INSTR_TYPE_MODRM, 0, 0, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "incw", 0xFF, -1, INSTR_TYPE_MODRM, 1, 0, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "incd", 0xFF, -1, INSTR_TYPE_MODRM, 0, 0, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "inc", 0x40, -1, INSTR_TYPE_OPREGW, 1, -1, 1, INSTR_ARG_GREGW, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "inc", 0x40, -1, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_GREGD, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
 	{ "insb", 0x6C, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "insw", 0x6D, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "insd", 0x6D, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "insertps", 0x0F, 0x213A, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, -1, 3, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_IMMB },
 	
 	{ "int3", 0xCC, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "int", 0xCD, -1, INSTR_TYPE_BYTE, 0, -1, 1, INSTR_ARG_IMMB, INSTR_ARG_NONE, INSTR_ARG_NONE },
@@ -432,6 +664,8 @@ struct {
 	{ "invd", 0x0F, 0x08, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
 	{ "invlpg", 0x0F, 0x01, INSTR_TYPE_MODRM, 0, 7, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "invpcid", 0x0F, 0x8238, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MMODRM, INSTR_ARG_NONE },
 	
 	{ "iret", 0xCF, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "iretw", 0xCF, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
@@ -511,24 +745,30 @@ struct {
 	{ "lar", 0x0F, 0x02, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	{ "lar", 0x0F, 0x02, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	
-	{ "lea", 0x8D, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "lea", 0x8D, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "lddqu", 0xF2, 0xF00F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "ldmxcsr", 0x0F, 0xAE, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "lea", 0x8D, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MMODRM, INSTR_ARG_NONE },
+	{ "lea", 0x8D, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MMODRM, INSTR_ARG_NONE },
 	
 	{ "leave", 0xC9, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "lgdt", 0x0F, 0x01, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	{ "lidt", 0x0F, 0x01, INSTR_TYPE_MODRM, 0, 3, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "lfence", 0x0F, 0xE8AE, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
-	{ "lds", 0xC5, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "lds", 0xC5, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "lss", 0x0F, 0xB2, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "lss", 0x0F, 0xB2, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "lss", 0xC4, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "lss", 0xC4, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "lfs", 0x0F, 0xB4, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "lfs", 0x0F, 0xB4, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "lgs", 0x0F, 0xB5, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "lgs", 0x0F, 0xB5, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "lgdt", 0x0F, 0x01, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "lidt", 0x0F, 0x01, INSTR_TYPE_MODRM, 0, 3, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "lds", 0xC5, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MMODRM, INSTR_ARG_NONE },
+	{ "lds", 0xC5, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MMODRM, INSTR_ARG_NONE },
+	{ "lss", 0x0F, 0xB2, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MMODRM, INSTR_ARG_NONE },
+	{ "lss", 0x0F, 0xB2, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MMODRM, INSTR_ARG_NONE },
+	{ "lss", 0xC4, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MMODRM, INSTR_ARG_NONE },
+	{ "lss", 0xC4, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MMODRM, INSTR_ARG_NONE },
+	{ "lfs", 0x0F, 0xB4, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MMODRM, INSTR_ARG_NONE },
+	{ "lfs", 0x0F, 0xB4, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MMODRM, INSTR_ARG_NONE },
+	{ "lgs", 0x0F, 0xB5, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MMODRM, INSTR_ARG_NONE },
+	{ "lgs", 0x0F, 0xB5, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MMODRM, INSTR_ARG_NONE },
 	
 	{ "lldt", 0x0F, 0x00, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
@@ -548,6 +788,25 @@ struct {
 	{ "lsl", 0x0F, 0x03, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	
 	{ "ltr", 0x0F, 0x00, INSTR_TYPE_MODRM, 0, 6, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "lzcnt", 0xF3, 0xBD0F, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "lzcnt", 0xF3, 0xBD0F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "maskmovdqu", 0x0F, 0x07, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XREG, INSTR_ARG_NONE },
+	
+	{ "maxpd", 0x0F, 0x5F, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "maxps", 0x0F, 0x5F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "maxsd", 0xF2, 0x5F0F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "maxss", 0xF3, 0x5F0F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "mfence", 0x0F, 0xF0AE, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "minpd", 0x0F, 0x5D, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "minps", 0x0F, 0x5D, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "minsd", 0xF2, 0x5D0F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "minss", 0xF3, 0x5D0F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "monitor", 0x0F, 0xC801, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
 	{ "mov", 0x88, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB, INSTR_ARG_NONE },
 	{ "mov", 0x89, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW, INSTR_ARG_NONE },
@@ -578,25 +837,93 @@ struct {
 	{ "mov", 0x0F, 0x24, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_TREG, INSTR_ARG_NONE },
 	{ "mov", 0x0F, 0x26, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_TREG, INSTR_ARG_GREGD, INSTR_ARG_NONE },
 	
+	{ "movapd", 0x0F, 0x28, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "movapd", 0x0F, 0x29, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "movaps", 0x0F, 0x28, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "movaps", 0x0F, 0x29, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "movbe", 0x0F, 0xF038, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MMODRM, INSTR_ARG_NONE },
+	{ "movbe", 0x0F, 0xF038, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MMODRM, INSTR_ARG_NONE },
+	{ "movbe", 0x0F, 0xF138, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MMODRM, INSTR_ARG_GREGW, INSTR_ARG_NONE },
+	{ "movbe", 0x0F, 0xF138, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MMODRM, INSTR_ARG_GREGW, INSTR_ARG_NONE },
+	
+	{ "movd", 0x0F, 0x6E, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "movd", 0x0F, 0x7E, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XMODRM, INSTR_ARG_XREG, INSTR_ARG_NONE },
+	
+	{ "movddup", 0xF2, 0x120F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "movdqa", 0x0F, 0x6F, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "movdqa", 0x0F, 0x7F, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XMODRM, INSTR_ARG_XREG, INSTR_ARG_NONE },
+	{ "movdqu", 0xF3, 0x6F0F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "movdqu", 0xF3, 0x7F0F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XMODRM, INSTR_ARG_XREG, INSTR_ARG_NONE },
+	
+	{ "movhlps", 0x0F, 0x12, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XREG, INSTR_ARG_NONE },
+	{ "movlhps", 0x0F, 0x16, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XREG, INSTR_ARG_NONE },
+	{ "movhpd", 0x0F, 0x16, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_MMODRM, INSTR_ARG_NONE },
+	{ "movhpd", 0x0F, 0x17, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MMODRM, INSTR_ARG_XREG, INSTR_ARG_NONE },
+	{ "movhps", 0x0F, 0x16, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_MMODRM, INSTR_ARG_NONE },
+	{ "movhps", 0x0F, 0x17, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MMODRM, INSTR_ARG_XREG, INSTR_ARG_NONE },
+	{ "movlpd", 0x0F, 0x12, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_MMODRM, INSTR_ARG_NONE },
+	{ "movlpd", 0x0F, 0x13, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MMODRM, INSTR_ARG_XREG, INSTR_ARG_NONE },
+	{ "movlps", 0x0F, 0x12, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_MMODRM, INSTR_ARG_NONE },
+	{ "movlps", 0x0F, 0x13, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MMODRM, INSTR_ARG_XREG, INSTR_ARG_NONE },
+	
+	{ "movmskpd", 0x0F, 0x50, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_XREG, INSTR_ARG_NONE },
+	{ "movmskps", 0x0F, 0x50, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_XREG, INSTR_ARG_NONE },
+	
+	{ "movntdqa", 0x0F, 0x2A38, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_MMODRM, INSTR_ARG_NONE },
+	{ "movntdq", 0x0F, 0xE7, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MMODRM, INSTR_ARG_XREG, INSTR_ARG_NONE },
+	{ "movnti", 0x0F, 0xC3, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MMODRM, INSTR_ARG_GREGD, INSTR_ARG_NONE },
+	{ "movntpd", 0x0F, 0x2B, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MMODRM, INSTR_ARG_XREG, INSTR_ARG_NONE },
+	{ "movntps", 0x0F, 0x2B, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MMODRM, INSTR_ARG_XREG, INSTR_ARG_NONE },
+	
+	{ "movq", 0xF3, 0x7E0F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "movq", 0x0F, 0xD6, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XMODRM, INSTR_ARG_XREG, INSTR_ARG_NONE },
+	
 	{ "movsb", 0xA4, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "movsw", 0xA5, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "movsd", 0xA5, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "movsd", 0xF2, 0x100F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "movsd", 0xF2, 0x110F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XMODRM, INSTR_ARG_XREG, INSTR_ARG_NONE },
+	{ "movss", 0xF3, 0x100F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "movss", 0xF3, 0x110F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XMODRM, INSTR_ARG_XREG, INSTR_ARG_NONE },
+	
+	{ "movshdup", 0xF3, 0x160F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "movsldup", 0xF3, 0x120F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
 	
 	{ "movsxb", 0x0F, 0xBE, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	{ "movsxb", 0x0F, 0xBE, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	{ "movsxw", 0x0F, 0xBF, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	
+	{ "movupd", 0x0F, 0x10, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "movupd", 0x0F, 0x11, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XMODRM, INSTR_ARG_XREG, INSTR_ARG_NONE },
+	{ "movups", 0x0F, 0x10, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "movups", 0x0F, 0x11, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XMODRM, INSTR_ARG_XREG, INSTR_ARG_NONE },
+	
 	{ "movzxb", 0x0F, 0xB6, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	{ "movzxb", 0x0F, 0xB6, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	{ "movzxw", 0x0F, 0xB7, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "mpsadbw", 0x0F, 0x423A, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, -1, 3, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_IMMB },
 	
 	{ "mul", 0xF6, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_ACCUMB, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	{ "mul", 0xF7, -1, INSTR_TYPE_MODRM, 1, 4, 2, INSTR_ARG_ACCUMW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	{ "mul", 0xF7, -1, INSTR_TYPE_MODRM, 0, 4, 2, INSTR_ARG_ACCUMD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	
+	{ "mulpd", 0x0F, 0x59, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "mulps", 0x0F, 0x59, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "mulsd", 0xF2, 0x590F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "mulss", 0xF3, 0x590F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "mulx", 0xE2C4, 0xF678, INSTR_TYPE_MODRM | INSTR_TYPE_OPREGD, 0, -1, 3, INSTR_ARG_GREGD, INSTR_ARG_GREGD, INSTR_ARG_MODRM },
+	
+	{ "mwait", 0x0F, 0xC901, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
 	{ "neg", 0xF7, -1, INSTR_TYPE_MODRM, 0, 3, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
 	{ "nop", 0x90, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "nop", 0x0F, 0x1F, INSTR_TYPE_MODRM, 0, 0, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
 	{ "not", 0xF6, -1, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
@@ -615,6 +942,9 @@ struct {
 	{ "or", 0x0B, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	{ "or", 0x0B, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	
+	{ "orpd", 0x0F, 0x56, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "orps", 0x0F, 0x56, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
 	{ "out", 0xE6, -1, INSTR_TYPE_BYTE | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_IMMB, INSTR_ARG_ACCUMB, INSTR_ARG_NONE },
 	{ "out", 0xE7, -1, INSTR_TYPE_BYTE | INSTR_TYPE_LEFT, 1, -1, 2, INSTR_ARG_IMMB, INSTR_ARG_ACCUMW, INSTR_ARG_NONE },
 	{ "out", 0xE7, -1, INSTR_TYPE_BYTE | INSTR_TYPE_LEFT, 0, -1, 2, INSTR_ARG_IMMB, INSTR_ARG_ACCUMD, INSTR_ARG_NONE },
@@ -626,6 +956,111 @@ struct {
 	{ "outsw", 0x6F, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "outsd", 0x6F, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
+	{ "pabsb", 0x0F, 0x1C38, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pabsw", 0x0F, 0x1D38, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pabsd", 0x0F, 0x1E38, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "packsswb", 0x0F, 0x63, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "packssdw", 0x0F, 0x6B, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "packuswb", 0x0F, 0x67, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "packusdw", 0x0F, 0x2B38, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "paddb", 0x0F, 0xFC, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "paddw", 0x0F, 0xFD, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "paddd", 0x0F, 0xFE, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "paddq", 0x0F, 0xD4, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "paddsb", 0x0F, 0xEC, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "paddsw", 0x0F, 0xED, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "paddusb", 0x0F, 0xDC, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "paddusw", 0x0F, 0xDD, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "palignr", 0x0F, 0x0F3A, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, -1, 3, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_IMMB },
+	
+	{ "pand", 0x0F, 0xDB, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pandn", 0x0F, 0xDF, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "pause", 0xF3, 0x90, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "pavgb", 0x0F, 0xE0, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pavgw", 0x0F, 0xE3, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "pblendvb", 0x0F, 0x1038, INSTR_TYPE_MODRM, 1, -1, 3, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_XMM0 },
+	{ "pblendw", 0x0F, 0x0E3A, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, -1, 3, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_IMMB },
+	
+	{ "pclmulqdq", 0x0F, 0x443A, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, -1, 3, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_IMMB },
+	
+	{ "pcmpeqb", 0x0F, 0x74, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pcmpeqw", 0x0F, 0x75, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pcmpeqd", 0x0F, 0x76, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pcmpeqq", 0x0F, 0x2938, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pcmpestri", 0x0F, 0x613A, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, -1, 3, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_IMMB },
+	{ "pcmpestrm", 0x0F, 0x603A, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, -1, 3, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_IMMB },
+	{ "pcmpgtb", 0x0F, 0x64, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pcmpgtw", 0x0F, 0x65, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pcmpgtd", 0x0F, 0x66, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pcmpgtq", 0x0F, 0x3738, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pcmpistri", 0x0F, 0x633A, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, -1, 3, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_IMMB },
+	{ "pcmpistrm", 0x0F, 0x623A, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, -1, 3, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_IMMB },
+	
+	{ "pextrb", 0x0F, 0x143A, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, -1, 3, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_IMMB },
+	{ "pextrw", 0x0F, 0xC5, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, -1, 3, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_IMMB },
+	{ "pextrd", 0x0F, 0x163A, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, -1, 3, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_IMMB },
+	
+	{ "phaddw", 0x0F, 0x0138, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "phaddd", 0x0F, 0x0238, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "phaddsw", 0x0F, 0x0338, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "phminposuw", 0x0F, 0x4138, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "phsubw", 0x0F, 0x0538, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "phsubd", 0x0F, 0x0638, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "phsubsw", 0x0F, 0x0738, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "pinsrb", 0x0F, 0x203A, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, -1, 3, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_IMMB },
+	{ "pinsrw", 0x0F, 0xC4, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, -1, 3, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_IMMB },
+	{ "pinsrd", 0x0F, 0x223A, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, -1, 3, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_IMMB },
+	
+	{ "pmaddubsw", 0x0F, 0x0438, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pmaddwd", 0x0F, 0xF5, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "pmaxsb", 0x0F, 0x3C38, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pmaxsw", 0x0F, 0xEE, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pmaxsd", 0x0F, 0x3D38, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pmaxub", 0x0F, 0xDE, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pmaxuw", 0x0F, 0x3E38, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pmaxud", 0x0F, 0x3F38, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "pminsb", 0x0F, 0x3838, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pminsw", 0x0F, 0xEA, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pminsd", 0x0F, 0x3938, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pminub", 0x0F, 0xDA, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pminuw", 0x0F, 0x3A38, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pminud", 0x0F, 0x3838, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "pmovmskb", 0x0F, 0xD7, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_XREG, INSTR_ARG_NONE },
+	
+	{ "pmovsxbw", 0x0F, 0x2038, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pmovsxbd", 0x0F, 0x2138, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pmovsxbq", 0x0F, 0x2238, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pmovsxwd", 0x0F, 0x2338, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pmovsxwq", 0x0F, 0x2438, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pmovsxdq", 0x0F, 0x2538, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "pmovzxbw", 0x0F, 0x3038, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pmovzxbd", 0x0F, 0x3138, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pmovzxbq", 0x0F, 0x3238, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pmovzxwd", 0x0F, 0x3338, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pmovzxwq", 0x0F, 0x3438, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pmovzxdq", 0x0F, 0x3538, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "pmuldq", 0x0F, 0x2838, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pmulhrsw", 0x0F, 0x0B38, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pmulhuw", 0x0F, 0xE4, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pmulhw", 0x0F, 0xE5, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pmulld", 0x0F, 0x4038, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pmullw", 0x0F, 0xD5, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pmuludq", 0x0F, 0xF4, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
 	{ "pop", 0x58, -1, INSTR_TYPE_OPREGW, 1, -1, 1, INSTR_ARG_GREGW, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "pop", 0x58, -1, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_GREGD, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
@@ -633,9 +1068,72 @@ struct {
 	{ "popaw", 0x61, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "popad", 0x61, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
+	{ "popcnt", 0xF3, 0xB80F, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "popcnt", 0xF3, 0xB80F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
 	{ "popf", 0x9D, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "popfw", 0x9D, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "popfd", 0x9D, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "por", 0x0F, 0xEB, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "prefetcht0", 0x0F, 0x18, INSTR_TYPE_MODRM, 0, 1, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "prefetcht1", 0x0F, 0x18, INSTR_TYPE_MODRM, 0, 2, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "prefetcht2", 0x0F, 0x18, INSTR_TYPE_MODRM, 0, 3, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "prefetchnta", 0x0F, 0x18, INSTR_TYPE_MODRM, 0, 0, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "prefetchtw", 0x0F, 0x0D, INSTR_TYPE_MODRM, 0, 1, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "psadbw", 0x0F, 0xF6, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "psignb", 0x0F, 0x0838, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "psignw", 0x0F, 0x0938, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "psignd", 0x0F, 0x0A38, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "pslldq", 0x0F, 0x73, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 7, 2, INSTR_ARG_XREG, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	
+	{ "psllw", 0x0F, 0xF1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "psllw", 0x0F, 0x71, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 7, 2, INSTR_ARG_XREG, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "pslld", 0x0F, 0xF2, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "pslld", 0x0F, 0x72, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 7, 2, INSTR_ARG_XREG, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "psllq", 0x0F, 0xF3, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "psllq", 0x0F, 0x73, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 7, 2, INSTR_ARG_XREG, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	
+	{ "psraw", 0x0F, 0xE1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "psraw", 0x0F, 0x71, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 4, 2, INSTR_ARG_XREG, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "psrad", 0x0F, 0xE2, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "psrad", 0x0F, 0x72, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 4, 2, INSTR_ARG_XREG, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "psraq", 0x0F, 0xE3, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "psraq", 0x0F, 0x73, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 4, 2, INSTR_ARG_XREG, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	
+	{ "psrldq", 0x0F, 0x73, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 3, 2, INSTR_ARG_XREG, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	
+	{ "psrlw", 0x0F, 0xD1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "psrlw", 0x0F, 0x71, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 2, 2, INSTR_ARG_XREG, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "psrld", 0x0F, 0xD2, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "psrld", 0x0F, 0x72, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 2, 2, INSTR_ARG_XREG, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	{ "psrlq", 0x0F, 0xD3, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "psrlq", 0x0F, 0x73, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, 2, 2, INSTR_ARG_XREG, INSTR_ARG_IMMB, INSTR_ARG_NONE },
+	
+	{ "psubb", 0x0F, 0xF8, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "psubw", 0x0F, 0xF9, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "psubd", 0x0F, 0xFA, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "psubq", 0x0F, 0xFB, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "psubsb", 0x0F, 0xE8, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "psubsw", 0x0F, 0xE9, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "psubusb", 0x0F, 0xD8, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "psubusw", 0x0F, 0xD9, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "ptest", 0x0F, 0x1738, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "punpckhbw", 0x0F, 0x68, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "punpckhwd", 0x0F, 0x69, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "punpckhdq", 0x0F, 0x6A, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "punpckhqdq", 0x0F, 0x6D, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "punpcklbw", 0x0F, 0x60, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "punpcklwd", 0x0F, 0x61, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "punpckldq", 0x0F, 0x62, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "punpcklqdq", 0x0F, 0x6C, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
 	
 	{ "push", 0x50, -1, INSTR_TYPE_OPREGW, 1, -1, 1, INSTR_ARG_GREGW, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "push", 0x50, -1, INSTR_TYPE_OPREGD, 0, -1, 1, INSTR_ARG_GREGD, INSTR_ARG_NONE, INSTR_ARG_NONE },
@@ -648,6 +1146,8 @@ struct {
 	{ "pushf", 0x9C, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "pushfw", 0x9C, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "pushfd", 0x9C, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "pxor", 0x0F, 0xEF, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
 	
 	{ "rclb", 0xD0, -1, INSTR_TYPE_MODRM, 0, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_VONE, INSTR_ARG_NONE },
 	{ "rclb", 0xD2, -1, INSTR_TYPE_MODRM, 0, 2, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB, INSTR_ARG_NONE },
@@ -686,11 +1186,19 @@ struct {
 	{ "rord", 0xD3, -1, INSTR_TYPE_MODRM, 0, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_COUNTB, INSTR_ARG_NONE },
 	{ "rord", 0xC1, -1, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, 1, 2, INSTR_ARG_MODRM, INSTR_ARG_IMMB, INSTR_ARG_NONE },
 	
+	{ "rcpps", 0x0F, 0x53, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "rcpss", 0xF3, 0x530F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
 	{ "rdmsr", 0x0F, 0x32, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
+	{ "rdpid", 0xF3, 0xC70F, INSTR_TYPE_MODRM, 0, 7, 1, INSTR_ARG_GREGD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "rdpkru", 0x0F, 0xEE01, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "rdpmc", 0x0F, 0x33, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
+	{ "rdrand", 0x0F, 0xC7, INSTR_TYPE_MODRM, 1, -1, 1, INSTR_ARG_GREGW, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "rdrand", 0x0F, 0xC7, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_GREGD, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "rdseed", 0x0F, 0xC7, INSTR_TYPE_MODRM, 1, 7, 1, INSTR_ARG_GREGW, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "rdseed", 0x0F, 0xC7, INSTR_TYPE_MODRM, 0, 7, 1, INSTR_ARG_GREGD, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "rdtsc", 0x0F, 0x31, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "rdtscp", 0x0F, 0xF901, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
 	{ "ret", 0xC3, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "ret", 0xC2, -1, INSTR_TYPE_WORD, 0, -1, 1, INSTR_ARG_IMMW, INSTR_ARG_NONE, INSTR_ARG_NONE },
@@ -701,7 +1209,15 @@ struct {
 	{ "retfd", 0xCB, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "retfd", 0xCA, -1, INSTR_TYPE_WORD, 0, -1, 1, INSTR_ARG_IMMW, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
+	{ "roundpd", 0x0F, 0x093A, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "roundps", 0x0F, 0x083A, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "roundsd", 0x0F, 0x0B3A, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "roundss", 0x0F, 0x0A3A, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
 	{ "rsm", 0x0F, 0xAA, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "rsqrtps", 0x0F, 0x52, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "rsqrtss", 0xF3, 0x520F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
 	
 	{ "sahf", 0x9E, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
@@ -793,16 +1309,44 @@ struct {
 	{ "sets", 0x0F, 0x98, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "setz", 0x0F, 0x94, INSTR_TYPE_MODRM, 0, -1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
+	{ "sfence", 0x0F, 0xF8AE, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
 	{ "sgdt", 0x0F, 0x01, INSTR_TYPE_MODRM, 0, 0, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "sidt", 0x0F, 0x01, INSTR_TYPE_MODRM, 0, 1, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
+	{ "sldt", 0x0F, 0x00, INSTR_TYPE_MODRM, 0, 0, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "smsw", 0x0F, 0x01, INSTR_TYPE_MODRM, 0, 4, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
+	{ "sha1rnds4", 0x0F, 0xCC3A, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, -1, 3, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_IMMB },
+	{ "sha1nexte", 0x0F, 0xC838, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "sha1msg1", 0x0F, 0xC938, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "sha1msg1", 0x0F, 0xCA38, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "sha256rnds2", 0x0F, 0xCB38, INSTR_TYPE_MODRM, 0, -1, 3, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_XMM0 },
+	{ "sha256msg1", 0x0F, 0xCC38, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "sha256msg1", 0x0F, 0xCD38, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "shld", 0x0F, 0xA4, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, -1, 3, INSTR_ARG_MODRM, INSTR_ARG_GREGW, INSTR_ARG_IMMB },
+	{ "shld", 0x0F, 0xA4, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, -1, 3, INSTR_ARG_MODRM, INSTR_ARG_GREGD, INSTR_ARG_IMMB },
+	{ "shld", 0x0F, 0xA5, INSTR_TYPE_MODRM, 1, -1, 3, INSTR_ARG_MODRM, INSTR_ARG_GREGW, INSTR_ARG_ACCUMB },
+	{ "shld", 0x0F, 0xA5, INSTR_TYPE_MODRM, 0, -1, 3, INSTR_ARG_MODRM, INSTR_ARG_GREGD, INSTR_ARG_ACCUMB },
+	
+	{ "shrd", 0x0F, 0xAC, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, -1, 3, INSTR_ARG_MODRM, INSTR_ARG_GREGW, INSTR_ARG_IMMB },
+	{ "shrd", 0x0F, 0xAC, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, -1, 3, INSTR_ARG_MODRM, INSTR_ARG_GREGD, INSTR_ARG_IMMB },
+	{ "shrd", 0x0F, 0xAD, INSTR_TYPE_MODRM, 1, -1, 3, INSTR_ARG_MODRM, INSTR_ARG_GREGW, INSTR_ARG_ACCUMB },
+	{ "shrd", 0x0F, 0xAD, INSTR_TYPE_MODRM, 0, -1, 3, INSTR_ARG_MODRM, INSTR_ARG_GREGD, INSTR_ARG_ACCUMB },
+	
+	{ "shufpd", 0x0F, 0xC6, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 1, -1, 3, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_IMMB },
+	{ "shufps", 0x0F, 0xC6, INSTR_TYPE_MODRM | INSTR_TYPE_BYTE, 0, -1, 3, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_IMMB },
+	
+	{ "sqrtpd", 0x0F, 0x51, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "sqrtps", 0x0F, 0x51, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "sqrtsd", 0xF2, 0x510F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "sqrtss", 0xF3, 0x510F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "stac", 0x0F, 0xCB01, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "stc", 0xF9, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
 	{ "std", 0xFD, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
-	
 	{ "sti", 0xFB, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "stmxcsr", 0x0F, 0xAE, INSTR_TYPE_MODRM, 0, 3, 1, INSTR_ARG_MMODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
 	{ "stosb", 0xAA, -1, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "stosw", 0xAB, -1, INSTR_TYPE_NONE, 1, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
@@ -825,6 +1369,11 @@ struct {
 	{ "sub", 0x2B, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	{ "sub", 0x2B, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	
+	{ "subpd", 0x0F, 0x5C, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "subps", 0x0F, 0x5C, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "subsd", 0xF2, 0x5C0F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "subss", 0xF3, 0x5C0F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
 	{ "sysenter", 0x0F, 0x34, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
 	{ "sysexit", 0x0F, 0x35, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
@@ -839,7 +1388,20 @@ struct {
 	{ "testw", 0x85, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW, INSTR_ARG_NONE },
 	{ "testd", 0x85, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD, INSTR_ARG_NONE },
 	
+	{ "tzcnt", 0xF3, 0xBC0F, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "tzcnt", 0xF3, 0xBC0F, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "ucomisd", 0x0F, 0x2E, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "ucomiss", 0x0F, 0x2E, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	
+	{ "ud0", 0x0F, 0xFF, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	{ "ud1", 0x0F, 0xB9, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	{ "ud2", 0x0F, 0x0B, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	
+	{ "unpckhpd", 0x0F, 0x15, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "unpckhps", 0x0F, 0x15, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "unpcklpd", 0x0F, 0x14, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "unpcklps", 0x0F, 0x14, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
 	
 	{ "verr", 0x0F, 0x00, INSTR_TYPE_MODRM, 0, 4, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	{ "verw", 0x0F, 0x00, INSTR_TYPE_MODRM, 0, 5, 1, INSTR_ARG_MODRM, INSTR_ARG_NONE, INSTR_ARG_NONE },
@@ -849,6 +1411,7 @@ struct {
 	{ "wbinvd", 0x0F, 0x09, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
 	{ "wrmsr", 0x0F, 0x30, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
+	{ "wrpkru", 0x0F, 0xEF01, INSTR_TYPE_NONE, 0, -1, 0, INSTR_ARG_NONE, INSTR_ARG_NONE, INSTR_ARG_NONE },
 	
 	{ "xadd", 0x0F, 0xC0, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGB, INSTR_ARG_NONE },
 	{ "xadd", 0x0F, 0xC1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGW, INSTR_ARG_NONE },
@@ -881,7 +1444,10 @@ struct {
 	{ "xor", 0x31, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_MODRM, INSTR_ARG_GREGD, INSTR_ARG_NONE },
 	{ "xor", 0x32, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGB, INSTR_ARG_MODRM, INSTR_ARG_NONE },
 	{ "xor", 0x33, -1, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_GREGW, INSTR_ARG_MODRM, INSTR_ARG_NONE },
-	{ "xor", 0x33, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE }
+	{ "xor", 0x33, -1, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_GREGD, INSTR_ARG_MODRM, INSTR_ARG_NONE },
+	
+	{ "xorpd", 0x0F, 0x57, INSTR_TYPE_MODRM, 1, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE },
+	{ "xorps", 0x0F, 0x57, INSTR_TYPE_MODRM, 0, -1, 2, INSTR_ARG_XREG, INSTR_ARG_XMODRM, INSTR_ARG_NONE }
 };
 
 static void x86_help(void) { }
@@ -1103,7 +1669,7 @@ static node_t *parser_parse_address(parser_t *parser, node_t *cur) {
 }
 
 static int x86_find_mnemonic(char *name) {
-	for (int i = 0; i < 409; i++) {
+	for (int i = 0; i < 765; i++) {
 		if ((strlen(mnemonics[i]) == strlen(name)) && !strcasecmp(mnemonics[i], name)) {										// Found?
 			return 1;																											// Yes :)
 		}
@@ -1290,6 +1856,7 @@ static int get_optype(node_t *node) {
 			found = 1;
 		} else if (!strcasecmp(name, "st0")) {																					// ST0?
 			ret |= (INSTR_ARG_STREG | INSTR_ARG_ST0);																			// Yes!
+			printf("0x%x\n", ret);
 			found = 1;
 		} else if (!strcasecmp(name, "eax")) {																					// Accum for dwords?
 			ret |= (INSTR_ARG_ACCUMD | INSTR_ARG_GREGD);																		// Yes!
@@ -1670,7 +2237,7 @@ static int x86_gen(codegen_t *codegen, node_t *node) {
 		op3 = get_optype(node->childs->next->next);																				// Get the optype from the third operand
 	}
 	
-	for (; instc < 669; instc++) {																								// Let's try to find this instruction!
+	for (; instc < 1079; instc++) {																								// Let's try to find this instruction!
 		if ((strlen(instructions[instc].name) != strlen(inod->name)) || strcasecmp(instructions[instc].name, inod->name)) {		// Same name?
 			continue;																											// Nope
 		} else {
