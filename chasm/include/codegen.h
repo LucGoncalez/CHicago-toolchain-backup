@@ -1,12 +1,12 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 28 of 2018, at 17:16 BRT
-// Last edited on January 05 of 2019, at 20:31 BRT
+// Last edited on January 10 of 2019, at 10:58 BRT
 
 #ifndef __CODEGEN_H__
 #define __CODEGEN_H__
 
-#include <stdint.h>
+#include <parser.h>
 
 #define CODEGEN_LABEL_LOCAL 0x00
 #define CODEGEN_LABEL_GLOBAL 0x01

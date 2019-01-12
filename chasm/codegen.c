@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 28 of 2018, at 17:15 BRT
-// Last edited on January 07 of 2019, at 16:39 BRT
+// Last edited on January 12 of 2019, at 17:54 BRT
 
 #include <arch.h>
 #include <stdio.h>
@@ -100,6 +100,10 @@ void codegen_write_qword(codegen_t *codegen, uint64_t data) {
 void codegen_add_relocation(codegen_t *codegen, char *name, char *sect, uint8_t size, uintptr_t loc, int inc) {
 	if (codegen == NULL || sect == NULL || size == 0) {															// Null pointer check
 		return;
+	}
+	
+	if (name != NULL && !codegen_have_label(codegen, name)) {													// This symbol is already "defined"?
+		codegen_add_label(codegen, name, CODEGEN_LABEL_EXTERN, 0);												// Nope, define it
 	}
 	
 	codegen_reloc_t *cur = codegen->relocs;																		// Let's get the last entry
@@ -248,20 +252,12 @@ int codegen_have_label(codegen_t *codegen, char *name) {
 	return 0;																									// Nope :(
 }
 
-void printbin(char c) {
-	for (int i = 7; i >= 0; --i) {
-		putchar((c & (1 << i)) ? '1' : '0');
-	}
-	
-	putchar('\n');
-}
-
 int codegen_gen(codegen_t *codegen) {
 	if (codegen == NULL) {																						// Null pointer check
 		return 0;
 	}
 	
-	codegen_select_section(codegen, ".code");																	// Select the .code section
+	codegen_select_section(codegen, ".text");																	// Select the .code section
 	
 	for (node_t *node = codegen->ast; node != NULL; node = node->next) {										// Let's generate everything!
 		if (node->type == NODE_TYPE_SECTION_DIRECTIVE) {														// Change the current section?
@@ -414,7 +410,7 @@ int codegen_gen(codegen_t *codegen) {
 	for (codegen_reloc_t *rel = codegen->relocs; rel != NULL; rel = rel->next) {								// Let's (try to) do the reallocations
 		codegen_label_t *lbl = codegen_get_label(codegen, rel->name);											// Get the symbol
 		
-		if (lbl != NULL && lbl->local_resolved) {																// Found?
+		if (lbl != NULL && lbl->local_resolved && lbl->type != CODEGEN_LABEL_EXTERN) {							// Found?
 			codegen_select_section(codegen, rel->sect);															// Yes!
 			
 			uintptr_t initial = codegen->current_section->size;													// Save the current pos

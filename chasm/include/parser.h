@@ -1,12 +1,12 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 27 of 2018, at 11:43 BRT
-// Last edited on January 07 of 2018, at 15:00 BRT
+// Last edited on January 10 of 2018, at 10:59 BRT
 
 #ifndef __PARSER_H__
 #define __PARSER_H__
 
-#include <stdint.h>
+#include <lexer.h>
 
 #define NODE_TYPE_SECTION_DIRECTIVE 0x00
 #define NODE_TYPE_GLOBAL_DIRECTIVE 0x01

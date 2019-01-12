@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 14:40 BRT
-// Last edited on December 30 of 2018, at 23:27 BRT
+// Last edited on January 10 of 2019, at 11:11 BRT
 
 #include <arch.h>
 #include <lexer.h>
@@ -26,8 +26,8 @@ static arch_t *arch_find(char *name) {
 	return NULL;
 }
 
-int arch_register(char *name, void (*help)(), int (*option)(int, char**, int), token_t *(*lex)(lexer_t*, token_t*, token_t*), node_t *(*parse)(parser_t*, node_t*), int (*gen)(codegen_t*, node_t*), uint8_t (*ttype)(char*), void (*tfree)(token_t*), void (*tprint)(token_t*)) {
-	if (name == NULL || lex == NULL || ttype == NULL || tfree == NULL || tprint == NULL) {				// We have everything we need?
+int arch_register(char *name, char *defexec, void (*help)(), int (*option)(int, char**, int), token_t *(*lex)(lexer_t*, token_t*, token_t*), node_t *(*parse)(parser_t*, node_t*), int (*gen)(codegen_t*, node_t*), uint8_t (*ttype)(char*), void (*tfree)(token_t*), void (*tprint)(token_t*)) {
+	if (name == NULL || defexec == NULL) {																// We have everything we need?
 		return 0;																						// No...
 	} else if (arch_list == NULL) {																		// First entry?
 		arch_list = calloc(1, sizeof(arch_list_t));														// Yes, alloc space
@@ -38,12 +38,13 @@ int arch_register(char *name, void (*help)(), int (*option)(int, char**, int), t
 		
 		arch_list->arch = malloc(sizeof(arch_t));														// Alloc space for the arch struct
 		
-		if (arch_list-> arch == NULL) {
+		if (arch_list->arch == NULL) {
 			free(arch_list);																			// Failed
 			return 0;
 		}
 		
 		arch_list->arch->name = name;																	// Fill the fields!
+		arch_list->arch->defexec = defexec;
 		arch_list->arch->help = help;
 		arch_list->arch->option = option;
 		arch_list->arch->lex = lex;
@@ -78,6 +79,7 @@ int arch_register(char *name, void (*help)(), int (*option)(int, char**, int), t
 	}
 	
 	cur->next->arch->name = name;																		// Fill the fields!
+	cur->next->arch->defexec = defexec;
 	cur->next->arch->help = help;
 	cur->next->arch->option = option;
 	cur->next->arch->lex = lex;
@@ -123,6 +125,14 @@ void arch_help() {
 	if (arch_current != NULL && arch_current->help != NULL) {											// Check if the arguments are valid
 		arch_current->help();																			// And redirect
 	}
+}
+
+char *arch_get_defexec() {
+	if (arch_current != NULL) {																			// Check if the arguments are valid
+		return arch_current->defexec;																	// And return
+	}
+	
+	return NULL;
 }
 
 int arch_option(int argc, char **argv, int i) {

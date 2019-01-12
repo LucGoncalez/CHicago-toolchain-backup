@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 17:37 BRT
-// Last edited on January 09 of 2019, at 23:56 BRT
+// Last edited on January 10 of 2019, at 11:08 BRT
 
 #include <arch.h>
 #include <inttypes.h>
@@ -75,28 +75,26 @@ static char *mnemonics[765] = {
 	"outsw", "outsd", "pabsb", "pabsw", "pabsd", "packsswb", "packssdw", "packuswb", "packusdw", "paddb", "paddw", "paddd",
 	"paddsb", "paddsw", "paddusb", "paddusw", "palignr", "pand", "pandn", "pause", "pavgb", "pavgw", "pblendvb", "pblendw",
 	"pclmulqdq", "pcmpeqb", "pcmpeqw", "pcmpeqd", "pcmpdqq", "pcmpestri", "pcmpestrm", "pcmpgtb", "pcmpgtw", "pcmpgtd",
-	"pcmpgtq", "pcmpistri", "pcmpistrm", "pextrb", "pextrw", "pextrd", "phaddw", "phaddd",
-	"phaddsw", "phminposuw", "phsubw", "phsubd", "phsubsw", "pinsrb", "pinsrw", "pinsrd", "pmaddubsw", "pmaddwd",
-	"pmaxsb", "pmaxsw", "pmaxsd", "pmaxub", "pmaxuw", "pmaxud", "pminsb", "pminsw", "pminsd",
-	"pminub", "pminuw", "pminud", "pmovmskb", "pmovsxbw", "pmovsxbd", "pmovsxbq", "pmovsxwd", "pmovsxwq", "pmovsxdq", "pmovzxbw", "pmovzxbd", "pmovzxbq", "pmovszwd", "pmovszwq", "pmovzxdq",
-	"pmuldq", "pmulhrsw", "pmulhuw", "pmulhw", "pmullw", "pmulld", "pmuludq", "pop", "popa", "popaw", "popad",
-	"popcnt", "popf", "popfw", "popfd", "por", "prefetcht0", "prefetcht1", "prefetcht2", "prefetchnta", "prefetchw",
-	"psadbw", "psignb", "psignw", "psignd", "pslldq", "psllw", "pslld",
-	"psllq", "psraw", "psrad", "psrldq", "psrlw", "psrld", "psrlq", "psubb", "psubw", "psubd", "psubq", "psubsb", "psubsw",
-	"psubusb", "psubusw", "ptest", "punpckhbw", "punpckhwd", "punpckhqdq", "punpcklbw", "punpcklwd", "punpckldq",
-	"punpcklqdq", "push", "pusha", "pushaw", "pushad", "pushf", "pushfw", "pushfd", "pxor", "rclb", "rclw", "rcld", "rcrb",
-	"rcrw", "rcrd", "rolb", "rolw", "rold", "rorb", "rorw", "rord", "rcpps", "rcpss", "rdmsr", "rdpid", "rdpkru", "rdpmc",
-	"rdrand", "rdseed", "rdtsc", "rdtscp", "ret", "retf", "retfw", "retfd", "roundpd", "roundps", "roundsd",
-	"roundss", "rsm", "rsqrtps", "rsqrtss", "sahf", "salb", "salw", "sald", "sarb", "sarw", "sard", "shlb", "shlw", "shld",
-	"shrb", "shrw", "shrd", "sbb", "sbbb", "sbbw", "sbbd", "scasb", "scasw", "scasd", "seta", "setae",
-	"setb", "setbe", "setc", "sete", "setg", "setge", "setl", "setle", "setna",  "setnae", "setnb", "setnbe", "setnc", "setne",
-	"setng", "setnge", "setnl", "setnle", "setno", "setnp", "setns", "setnz", "seto", "setp", "setpe", "setpo", "sets", "setz",
-	"sfence", "sgdt", "sidt", "sldt", "sha1rnds4", "sha1nexte", "sha1msg1", "sha1msg2", "sha256rnds2", "sha256msg1",
-	"sha256msg2", "shld", "shrd", "shufpd", "shufps", "smsw", "sqrtpd", "sqrtps", "sqrtsd", "sqrtss", "stac", "stc", "std",
-	"sti", "stmxcsr", "stosb", "stosw", "stosd", "str", "sub", "subb", "subw", "subd", "subpd", "subps", "subsd", "subss",
-	"sysenter", "sysexit", "test", "testb", "testw", "testd", "tzcnt", "ucomisd", "ucomiss", "ud0", "ud1", "ud2", "unpckhpd",
-	"unpckhps", "unpcklpd", "unpcklps", "verr", "verw", "wait", "wbinvd", "wrmsr", "wrpkru", "xadd", "xchg", "xlatb", "xlat",
-	"xor", "xorb", "xorw", "xord", "xorpd", "xorps"
+	"pcmpgtq", "pcmpistri", "pcmpistrm", "pextrb", "pextrw", "pextrd", "phaddw", "phaddd", "phaddsw", "phminposuw", "phsubw",
+	"phsubd", "phsubsw", "pinsrb", "pinsrw", "pinsrd", "pmaddubsw", "pmaddwd", "pmaxsb", "pmaxsw", "pmaxsd", "pmaxub", "pmaxuw",
+	"pmaxud", "pminsb", "pminsw", "pminsd", "pminub", "pminuw", "pminud", "pmovmskb", "pmovsxbw", "pmovsxbd", "pmovsxbq",
+	"pmovsxwd", "pmovsxwq", "pmovsxdq", "pmovzxbw", "pmovzxbd", "pmovzxbq", "pmovszwd", "pmovszwq", "pmovzxdq", "pmuldq",
+	"pmulhrsw", "pmulhuw", "pmulhw", "pmullw", "pmulld", "pmuludq", "pop", "popa", "popaw", "popad", "popcnt", "popf", "popfw",
+	"popfd", "por", "prefetcht0", "prefetcht1", "prefetcht2", "prefetchnta", "prefetchw", "psadbw", "psignb", "psignw", "psignd",
+	"pslldq", "psllw", "pslld", "psllq", "psraw", "psrad", "psrldq", "psrlw", "psrld", "psrlq", "psubb", "psubw", "psubd",
+	"psubq", "psubsb", "psubsw", "psubusb", "psubusw", "ptest", "punpckhbw", "punpckhwd", "punpckhqdq", "punpcklbw", "punpcklwd",
+	"punpckldq", "punpcklqdq", "push", "pusha", "pushaw", "pushad", "pushf", "pushfw", "pushfd", "pxor", "rclb", "rclw", "rcld",
+	"rcrb", "rcrw", "rcrd", "rolb", "rolw", "rold", "rorb", "rorw", "rord", "rcpps", "rcpss", "rdmsr", "rdpid", "rdpkru", "rdpmc",
+	"rdrand", "rdseed", "rdtsc", "rdtscp", "ret", "retf", "retfw", "retfd", "roundpd", "roundps", "roundsd", "roundss", "rsm",
+	"rsqrtps", "rsqrtss", "sahf", "salb", "salw", "sald", "sarb", "sarw", "sard", "shlb", "shlw", "shld", "shrb", "shrw", "shrd",
+	"sbb", "sbbb", "sbbw", "sbbd", "scasb", "scasw", "scasd", "seta", "setae", "setb", "setbe", "setc", "sete", "setg", "setge",
+	"setl", "setle", "setna",  "setnae", "setnb", "setnbe", "setnc", "setne", "setng", "setnge", "setnl", "setnle", "setno",
+	"setnp", "setns", "setnz", "seto", "setp", "setpe", "setpo", "sets", "setz", "sfence", "sgdt", "sidt", "sldt", "sha1rnds4",
+	"sha1nexte", "sha1msg1", "sha1msg2", "sha256rnds2", "sha256msg1", "sha256msg2", "shld", "shrd", "shufpd", "shufps", "smsw",
+	"sqrtpd", "sqrtps", "sqrtsd", "sqrtss", "stac", "stc", "std", "sti", "stmxcsr", "stosb", "stosw", "stosd", "str", "sub",
+	"subb", "subw", "subd", "subpd", "subps", "subsd", "subss", "sysenter", "sysexit", "test", "testb", "testw", "testd", "tzcnt",
+	"ucomisd", "ucomiss", "ud0", "ud1", "ud2", "unpckhpd", "unpckhps", "unpcklpd", "unpcklps", "verr", "verw", "wait", "wbinvd",
+	"wrmsr", "wrpkru", "xadd", "xchg", "xlatb", "xlat", "xor", "xorb", "xorw", "xord", "xorpd", "xorps"
 };
 
 struct {
@@ -2534,4 +2532,4 @@ static void x86_tprint(token_t *token) {
 	}
 }
 
-REGISTER_ARCH(x86, "x86", x86_help, x86_option, x86_lex, x86_parse, x86_gen, x86_ttype, x86_tfree, x86_tprint);					// Register this architecture
+REGISTER_ARCH(x86, "x86", "elf32", x86_help, x86_option, x86_lex, x86_parse, x86_gen, x86_ttype, x86_tfree, x86_tprint);		// Register this architecture

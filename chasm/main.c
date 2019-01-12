@@ -1,9 +1,10 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 10:46 BRT
-// Last edited on December 29 of 2018, at 21:51 BRT
+// Last edited on January 10 of 2019, at 11:12 BRT
 
 #include <arch.h>
+#include <exec.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -64,6 +65,7 @@ char *replace_extension(char *fname, char *newext) {
 
 int main(int argc, char **argv) {
 	char *arch = NULL;
+	char *exec = NULL;
 	char *input = NULL;
 	char *output = NULL;
 	
@@ -81,27 +83,37 @@ int main(int argc, char **argv) {
 			printf("    -h or --help          Show this help dialog\n");
 			printf("    -v or --version       Show the version of this program\n");
 			printf("    -o or --output        Set the output filename\n");
+			printf("    -f or --format        Set the output executable format\n");
 			printf("    -a or --arch          Set the output processor architecture\n");
+			printf("Supported executable formats: "); exec_list_all();
 			printf("Supported processor architectures: "); arch_list_all();
+			exec_help_all();
 			arch_help_all();
 			return 0;
 		} else if ((!strcmp(argv[i], "-v")) || (!strcmp(argv[i], "--version"))) {						// Version
 			printf("CHicago Operating System Project\n");
 			printf("CHicago Intermediate Language Compiler Version 1.0\n");
 			return 0;
-		} else if ((!strcmp(argv[i], "-a")) || (!strcmp(argv[i], "--arch"))) {							// Set output processor architecture
-			if ((i + 1) >= argc) {
-				printf("Expected filename after '%s'\n", argv[i]);
-				return 1;
-			} else {
-				arch = argv[++i];
-			}
 		} else if ((!strcmp(argv[i], "-o")) || (!strcmp(argv[i], "--output"))) {						// Set the output
 			if ((i + 1) >= argc) {
 				printf("Expected filename after '%s'\n", argv[i]);
 				return 1;
 			} else {
 				output = argv[++i];
+			}
+		} else if ((!strcmp(argv[i], "-f")) || (!strcmp(argv[i], "--format"))) {						// Set output executable format
+			if ((i + 1) >= argc) {
+				printf("Expected format name after '%s'\n", argv[i]);
+				return 1;
+			} else {
+				exec = argv[++i];
+			}
+		} else if ((!strcmp(argv[i], "-a")) || (!strcmp(argv[i], "--arch"))) {							// Set output processor architecture
+			if ((i + 1) >= argc) {
+				printf("Expected filename after '%s'\n", argv[i]);
+				return 1;
+			} else {
+				arch = argv[++i];
 			}
 		} else if ((temp = arch_option(argc, argv, i)) != 0) {											// Architecture-specific option
 			i += temp;
@@ -116,11 +128,14 @@ int main(int argc, char **argv) {
 	if (!arch_select(arch == NULL ? "x86" : arch)) {													// Try to select the output processor architecture
 		printf("Error: invalid arch '%s'\n", arch == NULL ? "x86" : arch);								// Failed...
 		return 1;
+	} else if (!exec_select(exec == NULL ? arch_get_defexec() : exec)) {								// Try to select the output executable format
+		printf("Error: invalid executable format '%s'\n", exec == NULL ? arch_get_defexec() : exec);	// Failed...
+		return 1;
 	} else if (input == NULL) {																			// We have any input file?
 		printf("Error: expected input file\n");															// No...
 		return 1;
 	} else if (output == NULL) {																		// Set the output name?
-		output = replace_extension(input, ".bin");														// Yeah
+		output = replace_extension(input, ".o");														// Yeah
 	}
 	
 	char *code = read_file(input);																		// Try to read the source code
@@ -179,13 +194,6 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 	
-	for (codegen_reloc_t *rel = codegen->relocs; rel != NULL; rel = rel->next) {						// Let's dump all the unresolved relocations!
-		if (!rel->resolved) {																			// Resolved?
-			printf("Relocation: section '%s', offset %ld, name '%s', inc %d\n",
-				   rel->sect, rel->loc, rel->name, rel->increment);										// Nope, print it!
-		}
-	}
-	
 	FILE *out = fopen(output, "wb");																	// Try to open the output file
 	
 	if (out == NULL) {
@@ -193,10 +201,13 @@ int main(int argc, char **argv) {
 		parser_free(parser);
 		lexer_free(lexer);
 		return 1;
-	}
-	
-	for (codegen_section_t *cur = codegen->sections; cur != NULL; cur = cur->next) {					// Let's write all sections!
-		fwrite(cur->data, cur->size, 1, out);
+	} else if (!exec_gen(codegen, out)) {																// Try to write the data to the output file!
+		printf("compilation failed\n");																	// Failed...
+		fclose(out);
+		codegen_free(codegen);
+		parser_free(parser);
+		lexer_free(lexer);
+		return 1;
 	}
 	
 	fclose(out);																						// Close the output file
