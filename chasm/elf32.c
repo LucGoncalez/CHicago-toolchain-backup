@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on January 10 of 2018, at 10:39 BRT
-// Last edited on January 12 of 2019, at 17:57 BRT
+// Last edited on January 12 of 2019, at 18:47 BRT
 
 #include <arch.h>
 #include <exec.h>
@@ -86,7 +86,7 @@ static int elf32_get_sym(codegen_t *codegen, char *name) {
 
 static int elf32_have_rel(codegen_t *codegen, char *name) {
 	for (codegen_reloc_t *cur = codegen->relocs; cur != NULL; cur = cur->next) {				// Let's go!
-		if (!strcmp(cur->sect, name) && !cur->resolved && !cur->increment) {					// Is the section that we want? And is unresolved? And don't have addend?
+		if (!strcmp(cur->sect, name) && !cur->increment) {										// Is the section that we want? And is unresolved? And don't have addend?
 			return 1;																			// Yeah!
 		}
 	}
@@ -98,7 +98,7 @@ static int elf32_get_relc(codegen_t *codegen, char *name) {
 	int ret = 0;
 	
 	for (codegen_reloc_t *cur = codegen->relocs; cur != NULL; cur = cur->next) {				// Let's go!
-		if (!strcmp(cur->sect, name) && !cur->resolved && !cur->increment) {					// Is the section that we want? And is unresolved? And don't have addend?
+		if (!strcmp(cur->sect, name) && !cur->increment) {										// Is the section that we want? And is unresolved? And don't have addend?
 			ret++;																				// Yeah!
 		}
 	}
@@ -108,7 +108,7 @@ static int elf32_get_relc(codegen_t *codegen, char *name) {
 
 static int elf32_have_rela(codegen_t *codegen, char *name) {
 	for (codegen_reloc_t *cur = codegen->relocs; cur != NULL; cur = cur->next) {				// Let's go!
-		if (!strcmp(cur->sect, name) && !cur->resolved && cur->increment) {						// Is the section that we want? And is unresolved? And have addend?
+		if (!strcmp(cur->sect, name) && cur->increment) {										// Is the section that we want? And is unresolved? And have addend?
 			return 1;																			// Yeah!
 		}
 	}
@@ -120,7 +120,7 @@ static int elf32_get_relac(codegen_t *codegen, char *name) {
 	int ret = 0;
 	
 	for (codegen_reloc_t *cur = codegen->relocs; cur != NULL; cur = cur->next) {				// Let's go!
-		if (!strcmp(cur->sect, name) && !cur->resolved && cur->increment) {						// Is the section that we want? And is unresolved? And have addend?
+		if (!strcmp(cur->sect, name) && cur->increment) {										// Is the section that we want? And is unresolved? And have addend?
 			ret++;																				// Yeah!
 		}
 	}
@@ -189,11 +189,10 @@ static int elf32_write_section(FILE *out, char *n, uint32_t v, uint32_t o, uint3
 		shdr.link = c;																			// Yes
 		shdr.info = s;
 		shdr.ent_size = b == 3 ? sizeof(elf32_rel_t) : sizeof(elf32_rela_t);
-	} else if (s == 2) {																		// Set the link, info, entsize field and addr_align (for sym)?
+	} else if (s == 2) {																		// Set the link, info and entsize field (for sym)?
 		shdr.link = c;																			// Yes
-		shdr.info = sz / sizeof(elf32_symbol_t);
+		shdr.info = sz / sizeof(elf32_symbol_t) - 1;
 		shdr.ent_size = sizeof(elf32_symbol_t);
-		shdr.addr_align = 4;
 	}
 	
 	if (!fwrite(&shdr, sizeof(elf32_section_header_t), 1, out)) {								// Write the header!
@@ -362,7 +361,7 @@ static int elf32_gen(codegen_t *codegen, FILE *out) {
 	for (codegen_section_t *cur = codegen->sections; cur != NULL; cur = cur->next) {			// Let's write the contents/data of all the .rel/.rela sections!
 		if (elf32_have_rel(codegen, cur->name)) {												// This section have a .rel section?
 			for (codegen_reloc_t *rel = codegen->relocs; rel != NULL; rel = rel->next) {		// Yes, so let's write the section!
-				if (strcmp(rel->sect, cur->name) || rel->resolved || rel->increment) {			// Valid relocation?
+				if (strcmp(rel->sect, cur->name) || rel->increment) {							// Valid relocation?
 					continue;																	// Nope	
 				} else if (!elf32_write_rel(out, sects + elf32_get_sym(codegen, rel->name),
 											rel->loc, rel->size)) {								// Write!
@@ -373,7 +372,7 @@ static int elf32_gen(codegen_t *codegen, FILE *out) {
 		
 		if (elf32_have_rela(codegen, cur->name)) {												// This section have a .rela section?
 			for (codegen_reloc_t *rel = codegen->relocs; rel != NULL; rel = rel->next) {		// Yes, so let's write the section!
-				if (strcmp(rel->sect, cur->name) || rel->resolved || !rel->increment) {			// Valid relocation?
+				if (strcmp(rel->sect, cur->name) || !rel->increment) {							// Valid relocation?
 					continue;																	// Nope	
 				} else if (!elf32_write_rela(out, sects + elf32_get_sym(codegen, rel->name),
 											rel->loc, rel->increment, rel->size)) {				// Write!
@@ -387,10 +386,8 @@ static int elf32_gen(codegen_t *codegen, FILE *out) {
 		return 0;
 	}
 	
-	sects = 0;																					// Reset the sects again
-	
-	for (codegen_section_t *cur = codegen->sections; cur != NULL; cur = cur->next, sects++) {	// Now, write the sections
-		if (!elf32_write_symbol(out, sects + 1, 0, 0, elf32_get_sect(codegen, cur->name), 1)) {
+	for (codegen_section_t *cur = codegen->sections; cur != NULL; cur = cur->next) {			// Now, write the sections
+		if (!elf32_write_symbol(out, 0, 0, 0, elf32_get_sect(codegen, cur->name), 1)) {
 			return 0;																			// Failed
 		}
 	}

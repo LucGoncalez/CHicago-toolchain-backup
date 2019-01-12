@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 28 of 2018, at 17:15 BRT
-// Last edited on January 12 of 2019, at 17:54 BRT
+// Last edited on January 12 of 2019, at 18:30 BRT
 
 #include <arch.h>
 #include <stdio.h>
@@ -384,7 +384,7 @@ int codegen_gen(codegen_t *codegen) {
 			
 			if (lbl == NULL) {																					// It doesn't exists?
 				codegen_add_label(codegen, ((label_node_t*)node)->name, CODEGEN_LABEL_LOCAL, loc);				// So let's add it!
-			} else if (!lbl->local_resolved) {																	// It's redefinition?
+			} else if (!lbl->local_resolved || lbl->type == CODEGEN_LABEL_EXTERN) {								// It's redefinition?
 				lbl->local_resolved = 1;																		// Nope, so let's set everything!
 				lbl->loc = loc;
 				
@@ -404,32 +404,6 @@ int codegen_gen(codegen_t *codegen) {
 				printf("invalid ntype %d\n", node->type);														// Invalid!
 				return 0;
 			}
-		}
-	}
-	
-	for (codegen_reloc_t *rel = codegen->relocs; rel != NULL; rel = rel->next) {								// Let's (try to) do the reallocations
-		codegen_label_t *lbl = codegen_get_label(codegen, rel->name);											// Get the symbol
-		
-		if (lbl != NULL && lbl->local_resolved && lbl->type != CODEGEN_LABEL_EXTERN) {							// Found?
-			codegen_select_section(codegen, rel->sect);															// Yes!
-			
-			uintptr_t initial = codegen->current_section->size;													// Save the current pos
-			uintptr_t lstart = codegen_get_section_start(codegen, lbl->sect);									// Get the section start
-			
-			codegen->current_section->size = rel->loc;															// And let's go to the reloc position
-			
-			if (rel->size == 1) {																				// Byte
-				codegen_write_byte(codegen, (uint8_t)(lstart + lbl->loc + rel->increment));
-			} else if (rel->size == 2) {																		// Word
-				codegen_write_word(codegen, (uint16_t)(lstart + lbl->loc + rel->increment));
-			} else if (rel->size == 4) {																		// DWord
-				codegen_write_dword(codegen, (uint32_t)(lstart + lbl->loc + rel->increment));
-			} else if (rel->size == 8) {																		// QWord
-				codegen_write_qword(codegen, (uint64_t)(lstart + lbl->loc + rel->increment));
-			}
-			
-			codegen->current_section->size = initial;															// Restore the old one pos
-			rel->resolved = 1;																					// And we resolved it!
 		}
 	}
 	

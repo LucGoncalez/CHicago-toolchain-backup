@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 28 of 2018, at 17:16 BRT
-// Last edited on January 10 of 2019, at 10:58 BRT
+// Last edited on January 12 of 2019, at 18:46 BRT
 
 #ifndef __CODEGEN_H__
 #define __CODEGEN_H__
@@ -32,7 +32,6 @@ typedef struct codegen_label_s {
 typedef struct codegen_reloc_s {
 	char *name;
 	char *sect;
-	int resolved;
 	uint8_t size;
 	uintptr_t loc;
 	int increment;
