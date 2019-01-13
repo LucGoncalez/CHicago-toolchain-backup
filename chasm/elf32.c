@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on January 10 of 2018, at 10:39 BRT
-// Last edited on January 12 of 2019, at 18:47 BRT
+// Last edited on January 12 of 2019, at 22:07 BRT
 
 #include <arch.h>
 #include <exec.h>
@@ -191,7 +191,7 @@ static int elf32_write_section(FILE *out, char *n, uint32_t v, uint32_t o, uint3
 		shdr.ent_size = b == 3 ? sizeof(elf32_rel_t) : sizeof(elf32_rela_t);
 	} else if (s == 2) {																		// Set the link, info and entsize field (for sym)?
 		shdr.link = c;																			// Yes
-		shdr.info = sz / sizeof(elf32_symbol_t) - 1;
+		shdr.info = sz / sizeof(elf32_symbol_t);
 		shdr.ent_size = sizeof(elf32_symbol_t);
 	}
 	
@@ -220,14 +220,17 @@ static int elf32_write_symbol(FILE *out, uint32_t n, uint32_t v, int b, int s, i
 	return 1;
 }
 
-static int elf32_write_rel(FILE *out, uint32_t name, uint32_t off, int size) {
+static int elf32_write_rel(FILE *out, uint32_t name, uint32_t off, int size, int r) {
 	elf32_rel_t rel;																			// Let's fill the rel header
 	
 	memset(&rel, 0, sizeof(elf32_rel_t));														// Fill the header with 0
 	
 	rel.offset = off;																			// Set the offset of the relocation in the section
-	rel.info = ELF32_R_INFO(name, size == 1 ? ELF32_R_386_8 :
-							(size == 2 ? ELF32_R_386_16 : ELF32_R_386_32));						// Set the info field
+	rel.info = ELF32_R_INFO(name, size == 1 && !r ? ELF32_R_386_8 :
+							(size == 1 && r ? ELF32_R_386_PC8 :
+							(size == 2 && !r ? ELF32_R_386_16 :
+							(size == 2 && r ? ELF32_R_386_PC16 :
+							(!r ? ELF32_R_386_32 : ELF32_R_386_PC32)))));						// Set the info field
 	
 	if (!fwrite(&rel, sizeof(elf32_rel_t), 1, out)) {											// Write the header!
 		return 0;																				// Failed
@@ -236,15 +239,18 @@ static int elf32_write_rel(FILE *out, uint32_t name, uint32_t off, int size) {
 	return 1;
 }
 
-static int elf32_write_rela(FILE *out, uint32_t name, uint32_t off, int incr, int size) {
+static int elf32_write_rela(FILE *out, uint32_t name, uint32_t off, int incr, int size, int r) {
 	elf32_rela_t rel;																			// Let's fill the rel header
 	
 	memset(&rel, 0, sizeof(elf32_rela_t));														// Fill the header with 0
 	
 	rel.offset = off;																			// Set the offset of the relocation in the section
-	rel.info = ELF32_R_INFO(name, size == 1 ? ELF32_R_386_8 :
-							(size == 2 ? ELF32_R_386_16 : ELF32_R_386_32));						// Set the info field
-	rel.addend = incr;
+	rel.info = ELF32_R_INFO(name, size == 1 && !r ? ELF32_R_386_8 :
+							(size == 1 && r ? ELF32_R_386_PC8 :
+							(size == 2 && !r ? ELF32_R_386_16 :
+							(size == 2 && r ? ELF32_R_386_PC16 :
+							(!r ? ELF32_R_386_32 : ELF32_R_386_PC32)))));						// Set the info field
+	rel.addend = incr;																			// Set the addend field
 	
 	if (!fwrite(&rel, sizeof(elf32_rela_t), 1, out)) {											// Write the header!
 		return 0;																				// Failed
@@ -364,7 +370,7 @@ static int elf32_gen(codegen_t *codegen, FILE *out) {
 				if (strcmp(rel->sect, cur->name) || rel->increment) {							// Valid relocation?
 					continue;																	// Nope	
 				} else if (!elf32_write_rel(out, sects + elf32_get_sym(codegen, rel->name),
-											rel->loc, rel->size)) {								// Write!
+											rel->loc, rel->size, rel->relative)) {				// Write!
 					return 0;																	// Failed
 				}
 			}
@@ -375,7 +381,8 @@ static int elf32_gen(codegen_t *codegen, FILE *out) {
 				if (strcmp(rel->sect, cur->name) || !rel->increment) {							// Valid relocation?
 					continue;																	// Nope	
 				} else if (!elf32_write_rela(out, sects + elf32_get_sym(codegen, rel->name),
-											rel->loc, rel->increment, rel->size)) {				// Write!
+											rel->loc, rel->increment, rel->size,
+											rel->relative)) {									// Write!
 					return 0;																	// Failed
 				}
 			}

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on January 10 of 2019, at 11:37 BRT
-// Last edited on January 12 of 2019, at 16:53 BRT
+// Last edited on January 12 of 2019, at 21:39 BRT
 
 #ifndef __ELF32_H__
 #define __ELF32_H__
@@ -40,8 +40,11 @@
 #define ELF32_SHN_HIRESERVE 0xFFFF
 
 #define ELF32_R_386_32 1
+#define ELF32_R_386_PC32 2
 #define ELF32_R_386_16 20
+#define ELF32_R_386_PC16 21
 #define ELF32_R_386_8 22
+#define ELF32_R_386_PC8 23
 
 #define ELF32_R_SYM(info) ((info) >> 8)
 #define ELF32_R_TYPE(info) ((uint8_t)(info))

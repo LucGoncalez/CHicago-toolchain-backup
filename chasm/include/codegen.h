@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 28 of 2018, at 17:16 BRT
-// Last edited on January 12 of 2019, at 18:46 BRT
+// Last edited on January 12 of 2019, at 21:41 BRT
 
 #ifndef __CODEGEN_H__
 #define __CODEGEN_H__
@@ -35,6 +35,7 @@ typedef struct codegen_reloc_s {
 	uint8_t size;
 	uintptr_t loc;
 	int increment;
+	int relative;
 	struct codegen_reloc_s *next;
 } codegen_reloc_t;
 
@@ -52,7 +53,7 @@ void codegen_write_byte(codegen_t *codegen, uint8_t data);
 void codegen_write_word(codegen_t *codegen, uint16_t data);
 void codegen_write_dword(codegen_t *codegen, uint32_t data);
 void codegen_write_qword(codegen_t *codegen, uint64_t data);
-void codegen_add_relocation(codegen_t *codegen, char *name, char *sect, uint8_t size, uintptr_t loc, int inc);
+void codegen_add_relocation(codegen_t *codegen, char *name, char *sect, uint8_t size, uintptr_t loc, int inc, int rel);
 void codegen_select_section(codegen_t *codegen, char *name);
 uintptr_t codegen_get_section_start(codegen_t *codegen, char *name);
 void codegen_add_label(codegen_t *codegen, char *name, uint8_t type, uintptr_t loc);

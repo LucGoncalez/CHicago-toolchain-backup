@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 28 of 2018, at 17:15 BRT
-// Last edited on January 12 of 2019, at 18:30 BRT
+// Last edited on January 12 of 2019, at 21:40 BRT
 
 #include <arch.h>
 #include <stdio.h>
@@ -97,7 +97,7 @@ void codegen_write_qword(codegen_t *codegen, uint64_t data) {
 	codegen_write_byte(codegen, (uint8_t)(data >> 56));
 }
 
-void codegen_add_relocation(codegen_t *codegen, char *name, char *sect, uint8_t size, uintptr_t loc, int inc) {
+void codegen_add_relocation(codegen_t *codegen, char *name, char *sect, uint8_t size, uintptr_t loc, int inc, int rel) {
 	if (codegen == NULL || sect == NULL || size == 0) {															// Null pointer check
 		return;
 	}
@@ -126,6 +126,7 @@ void codegen_add_relocation(codegen_t *codegen, char *name, char *sect, uint8_t 
 	cur->size = size;
 	cur->loc = loc;
 	cur->increment = inc;
+	cur->relative = rel;
 	
 	if (codegen->relocs == NULL) {																				// First entry?
 		codegen->relocs = cur;																					// Yeah
@@ -291,7 +292,8 @@ int codegen_gen(codegen_t *codegen) {
 					codegen_write_qword(codegen, 0);
 				}
 				
-				codegen_add_relocation(codegen, sym->value, codegen->current_section->name, def->size, loc, 0);	// And add the relocation!
+				codegen_add_relocation(codegen, sym->value, codegen->current_section->name, def->size, loc, 0,
+									   0);																		// And add the relocation!
 			} else if (node->childs->type == NODE_TYPE_NUMBER) {												// Put a integer?
 				number_node_t *num = (number_node_t*)node->childs;												// Yeah!
 				

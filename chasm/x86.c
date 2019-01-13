@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 17:37 BRT
-// Last edited on January 10 of 2019, at 11:08 BRT
+// Last edited on January 12 of 2019, at 22:07 BRT
 
 #include <arch.h>
 #include <inttypes.h>
@@ -1971,18 +1971,15 @@ static int get_optype(node_t *node) {
 
 static uint32_t get_opval(codegen_t *codegen, node_t *node, int size, int rel) {
 	codegen_section_t *sect = codegen->current_section;
-	int inc = rel ? sect->size + size : 0;
-	uint32_t ret = 0;
+	uint32_t ret = -size;
 	
 	if (node->type == NODE_TYPE_IDENTIFIER) {																					// Identifier (symbol)?
-		codegen_add_relocation(codegen, ((identifier_node_t*)node)->value, sect->name, size, sect->size, -inc);					// Yes, add relocation
+		codegen_add_relocation(codegen, ((identifier_node_t*)node)->value, sect->name, size, sect->size, 0, 1);					// Yes, add relocation
 	} else if (node->type == NODE_TYPE_NUMBER) {																				// Number?
-		uint32_t val = (uint32_t)(((number_node_t*)node)->value) - inc;															// Yes
-		
 		if (rel) {																												// Relative?
-			codegen_add_relocation(codegen, NULL, sect->name, size, sect->size, val);											// Yes
+			codegen_add_relocation(codegen, NULL, sect->name, size, sect->size, (uint32_t)(((number_node_t*)node)->value), 1);	// Yes
 		} else {
-			ret = (uint32_t)(((number_node_t*)node)->value) - inc;																// Nope
+			ret = (uint32_t)(((number_node_t*)node)->value);																	// Nope
 		}
 	} else if (node->type == NODE_TYPE_POINTER) {																				// Pointer?
 		return get_opval(codegen, node->childs->next, size, rel);																// Yes
