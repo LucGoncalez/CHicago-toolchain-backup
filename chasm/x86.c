@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 17:37 BRT
-// Last edited on January 12 of 2019, at 22:07 BRT
+// Last edited on January 12 of 2019, at 19:11 BRT
 
 #include <arch.h>
 #include <inttypes.h>
@@ -1971,10 +1971,10 @@ static int get_optype(node_t *node) {
 
 static uint32_t get_opval(codegen_t *codegen, node_t *node, int size, int rel) {
 	codegen_section_t *sect = codegen->current_section;
-	uint32_t ret = -size;
+	uint32_t ret = rel ? -size : 0;
 	
 	if (node->type == NODE_TYPE_IDENTIFIER) {																					// Identifier (symbol)?
-		codegen_add_relocation(codegen, ((identifier_node_t*)node)->value, sect->name, size, sect->size, 0, 1);					// Yes, add relocation
+		codegen_add_relocation(codegen, ((identifier_node_t*)node)->value, sect->name, size, sect->size, 0, rel);				// Yes, add relocation
 	} else if (node->type == NODE_TYPE_NUMBER) {																				// Number?
 		if (rel) {																												// Relative?
 			codegen_add_relocation(codegen, NULL, sect->name, size, sect->size, (uint32_t)(((number_node_t*)node)->value), 1);	// Yes
