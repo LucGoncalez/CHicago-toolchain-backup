@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 10:46 BRT
-// Last edited on January 10 of 2019, at 11:12 BRT
+// Last edited on January 14 of 2019, at 13:31 BRT
 
 #include <arch.h>
 #include <exec.h>
@@ -64,10 +64,16 @@ char *replace_extension(char *fname, char *newext) {
 }
 
 int main(int argc, char **argv) {
-	char *arch = NULL;
-	char *exec = NULL;
 	char *input = NULL;
 	char *output = NULL;
+	
+	if (!arch_select("x86")) {																			// Try to select the default output processor architecture
+		printf("Error: invalid arch 'x86'\n");															// Failed...
+		return 1;
+	} else if (!exec_select(arch_get_defexec())) {														// Try to select the default output executable format
+		printf("Error: invalid executable format '%s'\n", arch_get_defexec());							// Failed...
+		return 1;
+	}
 	
 	if (argc < 2) {																						// Check if we have any arguments
 		printf("Usage: %s [options] file\n", argv[0]);													// We don't have any, just print the usage
@@ -86,8 +92,8 @@ int main(int argc, char **argv) {
 			printf("    -f or --format        Set the output executable format\n");
 			printf("    -a or --arch          Set the output processor architecture\n");
 			printf("Supported executable formats: "); exec_list_all();
-			printf("Supported processor architectures: "); arch_list_all();
 			exec_help_all();
+			printf("Supported processor architectures: "); arch_list_all();
 			arch_help_all();
 			return 0;
 		} else if ((!strcmp(argv[i], "-v")) || (!strcmp(argv[i], "--version"))) {						// Version
@@ -106,16 +112,39 @@ int main(int argc, char **argv) {
 				printf("Expected format name after '%s'\n", argv[i]);
 				return 1;
 			} else {
-				exec = argv[++i];
+				char *exec = argv[++i];																	// Save the name of the new output exec format
+				
+				if (!exec_select(exec)) {																// Try to select the new output exec format
+					printf("Error: invalid executable format '%s'\n", exec);							// Failed...
+					return 1;
+				}
 			}
 		} else if ((!strcmp(argv[i], "-a")) || (!strcmp(argv[i], "--arch"))) {							// Set output processor architecture
 			if ((i + 1) >= argc) {
 				printf("Expected filename after '%s'\n", argv[i]);
 				return 1;
 			} else {
-				arch = argv[++i];
+				char *arch = argv[++i];																	// Save the name of the new output arch
+				
+				if (!arch_select(arch)) {																// Try to select the new output arch
+					printf("Error: invalid arch '%s'\n", arch);											// Failed...
+					return 1;
+				} else if (!exec_select(arch_get_defexec())) {											// Try to select the default output exec format
+					printf("Error: invalid executable format '%s'\n", arch_get_defexec());				// Failed...
+					return 1;
+				}
 			}
-		} else if ((temp = arch_option(argc, argv, i)) != 0) {											// Architecture-specific option
+		} else if ((temp = arch_option(argc, argv, i)) != 0) {											// Architecture-specific option?
+			if (temp == -1) {
+				return 1;																				// Failed...
+			}
+			
+			i += temp;
+		} else if ((temp = exec_option(argc, argv, i)) != 0) {											// Executable format-specific option?
+			if (temp == -1) {
+				return 1;																				// Failed...
+			}
+			
 			i += temp;
 		} else if (input == NULL) {																		// It's the input?
 			input = argv[i];																			// Yes!
@@ -125,13 +154,7 @@ int main(int argc, char **argv) {
 		}
 	}
 	
-	if (!arch_select(arch == NULL ? "x86" : arch)) {													// Try to select the output processor architecture
-		printf("Error: invalid arch '%s'\n", arch == NULL ? "x86" : arch);								// Failed...
-		return 1;
-	} else if (!exec_select(exec == NULL ? arch_get_defexec() : exec)) {								// Try to select the output executable format
-		printf("Error: invalid executable format '%s'\n", exec == NULL ? arch_get_defexec() : exec);	// Failed...
-		return 1;
-	} else if (input == NULL) {																			// We have any input file?
+	if (input == NULL) {																				// We have any input file?
 		printf("Error: expected input file\n");															// No...
 		return 1;
 	} else if (output == NULL) {																		// Set the output name?

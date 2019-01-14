@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 28 of 2018, at 17:15 BRT
-// Last edited on January 12 of 2019, at 21:40 BRT
+// Last edited on January 14 of 2019, at 14:19 BRT
 
 #include <arch.h>
 #include <stdio.h>
@@ -387,7 +387,8 @@ int codegen_gen(codegen_t *codegen) {
 			if (lbl == NULL) {																					// It doesn't exists?
 				codegen_add_label(codegen, ((label_node_t*)node)->name, CODEGEN_LABEL_LOCAL, loc);				// So let's add it!
 			} else if (!lbl->local_resolved || lbl->type == CODEGEN_LABEL_EXTERN) {								// It's redefinition?
-				lbl->local_resolved = 1;																		// Nope, so let's set everything!
+				lbl->sect = codegen->current_section->name;														// Nope, so let's set everything!
+				lbl->local_resolved = 1;			
 				lbl->loc = loc;
 				
 				if (lbl->type != CODEGEN_LABEL_GLOBAL) {

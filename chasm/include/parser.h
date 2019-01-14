@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 27 of 2018, at 11:43 BRT
-// Last edited on January 10 of 2018, at 10:59 BRT
+// Last edited on January 14 of 2019, at 12:55 BRT
 
 #ifndef __PARSER_H__
 #define __PARSER_H__

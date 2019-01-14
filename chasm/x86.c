@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 17:37 BRT
-// Last edited on January 12 of 2019, at 19:11 BRT
+// Last edited on January 14 of 2019, at 14:11 BRT
 
 #include <arch.h>
 #include <inttypes.h>
@@ -1977,7 +1977,7 @@ static uint32_t get_opval(codegen_t *codegen, node_t *node, int size, int rel) {
 		codegen_add_relocation(codegen, ((identifier_node_t*)node)->value, sect->name, size, sect->size, 0, rel);				// Yes, add relocation
 	} else if (node->type == NODE_TYPE_NUMBER) {																				// Number?
 		if (rel) {																												// Relative?
-			codegen_add_relocation(codegen, NULL, sect->name, size, sect->size, (uint32_t)(((number_node_t*)node)->value), 1);	// Yes
+			codegen_add_relocation(codegen, NULL, sect->name, size, sect->size, -(uint32_t)(((number_node_t*)node)->value), 1);	// Yes
 		} else {
 			ret = (uint32_t)(((number_node_t*)node)->value);																	// Nope
 		}
