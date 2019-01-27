@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 10:46 BRT
-// Last edited on January 14 of 2019, at 13:31 BRT
+// Last edited on January 27 of 2019, at 13:35 BRT
 
 #include <arch.h>
 #include <exec.h>
@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
 			return 0;
 		} else if ((!strcmp(argv[i], "-v")) || (!strcmp(argv[i], "--version"))) {						// Version
 			printf("CHicago Operating System Project\n");
-			printf("CHicago Intermediate Language Compiler Version 1.0\n");
+			printf("CHicago Assembler Version 1.0\n");
 			return 0;
 		} else if ((!strcmp(argv[i], "-o")) || (!strcmp(argv[i], "--output"))) {						// Set the output
 			if ((i + 1) >= argc) {

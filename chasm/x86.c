@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 17:37 BRT
-// Last edited on January 14 of 2019, at 14:11 BRT
+// Last edited on January 27 of 2019, at 19:21 BRT
 
 #include <arch.h>
 #include <inttypes.h>
@@ -1854,7 +1854,6 @@ static int get_optype(node_t *node) {
 			found = 1;
 		} else if (!strcasecmp(name, "st0")) {																					// ST0?
 			ret |= (INSTR_ARG_STREG | INSTR_ARG_ST0);																			// Yes!
-			printf("0x%x\n", ret);
 			found = 1;
 		} else if (!strcasecmp(name, "eax")) {																					// Accum for dwords?
 			ret |= (INSTR_ARG_ACCUMD | INSTR_ARG_GREGD);																		// Yes!
@@ -2529,4 +2528,4 @@ static void x86_tprint(token_t *token) {
 	}
 }
 
-REGISTER_ARCH(x86, "x86", "elf32", x86_help, x86_option, x86_lex, x86_parse, x86_gen, x86_ttype, x86_tfree, x86_tprint);		// Register this architecture
+REGISTER_ARCH(x86, "x86", "chexec32", x86_help, x86_option, x86_lex, x86_parse, x86_gen, x86_ttype, x86_tfree, x86_tprint);		// Register this architecture
