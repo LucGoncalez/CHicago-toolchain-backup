@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on January 27 of 2019, at 13:52 BRT
-// Last edited on January 27 of 2019, at 19:20 BRT
+// Last edited on February 15 of 2019, at 17:42 BRT
 
 #include <arch.h>
 #include <chexec32.h>
@@ -22,7 +22,8 @@ static uint16_t chexec32_get_machine(char *name) {
 	}
 }
 
-static int chexec32_write_hdr(FILE *out, int sects, int syms, int rels) {
+static uint32_t chexec32_write_hdr(codegen_t *codegen, FILE *out) {
+	uintptr_t ret = 0;
 	chexec32_header_t hdr;																		// Let's fill the chexec header!
 	
 	memset(&hdr, 0, sizeof(chexec32_header_t));													// Fill the header with 0
@@ -34,20 +35,37 @@ static int chexec32_write_hdr(FILE *out, int sects, int syms, int rels) {
 		return 0;																				// >:(
 	}
 	
-	hdr.sh_count = sects;																		// Set the amount of section headers we have
-	hdr.sh_start = sizeof(chexec32_header_t);													// Set the start of the section headers
-	hdr.st_count = syms;																		// Set the amount of symbols we have
-	hdr.st_start = hdr.sh_start + (sizeof(chexec32_section_t) * sects);							// Set the start of the symbol table
-	hdr.rel_count = rels;																		// Set the amount of relocations we have
-	hdr.rel_start = hdr.st_start + (sizeof(chexec32_sym_t) * syms);								// Set the start of the relocations
+	hdr.sh_start = sizeof(chexec32_header_t);													// Set the start of the section, symbol and relocation headers
+	hdr.st_start = sizeof(chexec32_header_t);
+	hdr.rel_start = sizeof(chexec32_header_t);
+	
+	for (codegen_section_t *cur = codegen->sections; cur != NULL; cur = cur->next) {			// Let's get the amount of sections
+		hdr.sh_count++;
+		hdr.st_start += sizeof(chexec32_section_t) + strlen(cur->name) * sizeof(wchar_t);
+		hdr.rel_start += sizeof(chexec32_section_t) + strlen(cur->name) * sizeof(wchar_t);
+	}
+	
+	for (codegen_label_t *cur = codegen->labels; cur != NULL; cur = cur->next) {				// Let's get the amount of symbols
+		if (cur->local_resolved) {
+			hdr.st_count++;
+			hdr.rel_start += sizeof(chexec32_sym_t) + strlen(cur->name) * sizeof(wchar_t);
+		}
+	}
+	
+	ret = hdr.rel_start;																		// Set the base return value
+	
+	for (codegen_reloc_t *cur = codegen->relocs; cur != NULL; cur = cur->next) {				// And the amount of relocs
+		hdr.rel_count++;
+		ret += sizeof(chexec32_rel_t) + (cur->name != NULL ? strlen(cur->name) *
+										 					 sizeof(wchar_t) : 0);
+	}
 	
 	if (!fwrite(&hdr, sizeof(chexec32_header_t), 1, out)) {										// Write the header!
 		return 0;																				// Failed
 	}
 	
-	return 1;
+	return ret;
 }
-
 
 static int chexec32_write_section(FILE *out, char *n, uint32_t v, uint32_t o, uint32_t s, int b) {
 	chexec32_section_t shdr;																	// Let's fill the section header
@@ -130,27 +148,12 @@ static int chexec32_gen(codegen_t *codegen, FILE *out) {
 		return 0;
 	}
 	
-	int sects = 0;																				// Let's get the section count
-	for (codegen_section_t *cur = codegen->sections; cur != NULL; cur = cur->next, sects++) ;
+	uint32_t vaddr = 0;
+	uint32_t off = chexec32_write_hdr(codegen, out);											// Write the chexec header
 	
-	int rels = 0;																				// Let's get the relocation count
-	for (codegen_reloc_t *cur = codegen->relocs; cur != NULL; cur = cur->next, rels++) ;
-	
-	int syms = 0;																				// And the symbol count
-	for (codegen_label_t *cur = codegen->labels; cur != NULL; cur = cur->next) {
-		if (cur->local_resolved) {
-			syms++;
-		}
-	}
-	
-	if (!chexec32_write_hdr(out, sects, syms, rels)) {											// Write the chexec header
+	if (!off) {
 		return 0;																				// Failed
 	}
-	
-	uint32_t vaddr = 0;
-	uint32_t off = sizeof(chexec32_header_t) + (sizeof(chexec32_section_t) * sects) +
-											   (sizeof(chexec32_sym_t) * syms) +
-											   (sizeof(chexec32_rel_t) * rels);
 	
 	for (codegen_section_t *cur = codegen->sections; cur != NULL; cur = cur->next) {			// Write the section headers
 		uint32_t sz = (uint32_t)cur->size;
