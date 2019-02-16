@@ -1,14 +1,14 @@
 # File author is Ítalo Lima Marconato Matias
 #
 # Created on December 02 of 2018, at 10:47 BRT
-# Last edited on January 27 of 2019, at 13:53 BRT
+# Last edited on February 16 of 2019, at 20:18 BRT
 
 VERBOSE ?= false
 DEBUG ?= false
 
 OBJECTS := arch.c.o bin.c.o codegen.c.o chexec32.c.o
-OBJECTS += elf32.c.o exec.c.o lexer.c.o main.c.o
-OBJECTS += parser.c.o x86.c.o
+OBJECTS += exec.c.o lexer.c.o main.c.o parser.c.o
+OBJECTS += x86.c.o
 
 OBJECTS := $(addprefix build/,$(OBJECTS))
 OUTPUT := build/chasm
