@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on January 27 of 2019, at 13:52 BRT
-// Last edited on February 15 of 2019, at 17:42 BRT
+// Last edited on February 16 of 2019, at 13:49 BRT
 
 #include <arch.h>
 #include <chexec32.h>
@@ -97,7 +97,8 @@ static int chexec32_write_sym(FILE *out, char *n, uint32_t v, int b) {
 	
 	memset(&sym, 0, sizeof(chexec32_sym_t));													// Fill the header with 0
 	
-	sym.flags = b == CODEGEN_LABEL_EXTERN ? CHEXEC32_SYM_FLAGS_UNDEF : CHEXEC32_SYM_FLAGS_NONE;	// Set the flags
+	sym.flags = b == CODEGEN_LABEL_EXTERN ? CHEXEC32_SYM_FLAGS_UNDEF :
+				(b == CODEGEN_LABEL_LOCAL ? CHEXEC32_SYM_FLAGS_LOC : CHEXEC32_SYM_FLAGS_NONE);	// Set the flags
 	sym.virt = v;																				// Set the virtual address
 	sym.name_len = strlen(n);																	// Set the length of the name
 	

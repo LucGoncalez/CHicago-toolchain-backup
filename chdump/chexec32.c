@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on February 15 of 2019, at 15:09 BRT
-// Last edited on February 15 of 2019, at 20:03 BRT
+// Last edited on February 16 of 2019, at 09:53 BRT
 
 #include <chexec32.h>
 #include <exec.h>
@@ -89,7 +89,8 @@ static int chexec32_gen(context_t *context, char *file) {
 		
 		name[sym->name_len] = 0;																						// Zero end it
 		
-		uint8_t type = sym->flags & CHEXEC32_SYM_FLAGS_UNDEF ? CONTEXT_SYMBOL_EXTERN : CONTEXT_SYMBOL_GLOBAL;
+		uint8_t type = sym->flags & CHEXEC32_SYM_FLAGS_UNDEF ? CONTEXT_SYMBOL_EXTERN :
+					   (sym->flags & CHEXEC32_SYM_FLAGS_NONE ? CONTEXT_SYMBOL_GLOBAL : CONTEXT_SYMBOL_LOCAL);
 		uintptr_t loc = 0;																								// Let's get the section of this symbol (and address of the symbol INSIDE the section)
 		char *sect = chexec32_get_sect(context, sym->virt, &loc);
 		

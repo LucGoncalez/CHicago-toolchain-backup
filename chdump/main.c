@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on January 28 of 2019, at 16:47 BRT
-// Last edited on February 15 of 2019, at 19:57 BRT
+// Last edited on February 16 of 2019, at 13:57 BRT
 
 #include <exec.h>
 #include <stdio.h>
@@ -95,7 +95,11 @@ int main(int argc, char **argv) {
 		printf("Sections:\nName\t\tSize              Virtual Address   File Offset\n");							// Yes, print them!
 		
 		for (context_section_t *sect = context->sections; sect != NULL; sect = sect->next) {
-			printf("%s\t\t%016llX  %016llX  %016llX\n", sect->name, sect->size, sect->virt, sect->off);
+			if (strlen(sect->name) > 7) {
+				printf("%s\t%016llX  %016llX  %016llX\n", sect->name, sect->size, sect->virt, sect->off);
+			} else {
+				printf("%s\t\t%016llX  %016llX  %016llX\n", sect->name, sect->size, sect->virt, sect->off);
+			}
 		}
 		
 		newline = 1;
@@ -109,7 +113,20 @@ int main(int argc, char **argv) {
 		printf("Symbols:\nName\t\tSection\t\tType    Section Offset\n");										// Let's print them!
 		
 		for (context_symbol_t *sym = context->symbols; sym != NULL; sym = sym->next) {
-			printf("%s\t\t%s\t\t%s  %016llX\n", sym->name, sym->sect, sym->type ? "Extern" : "Global", sym->loc);
+			if (strlen(sym->name) > 7) {
+				printf("%s\t", sym->name);
+			} else {
+				printf("%s\t\t", sym->name);
+			}
+			
+			if (strlen(sym->sect) > 7) {
+				printf("%s\t", sym->sect);
+			} else {
+				printf("%s\t\t", sym->sect);
+			}
+			
+			printf("%s  %016llX\n", sym->type == 1 ? "Extern" : (sym->type == 0 ? "Global" : "Local "),
+				   					sym->loc);
 		}
 		
 		newline = 1;
@@ -123,8 +140,20 @@ int main(int argc, char **argv) {
 		printf("Relocations:\nName\t\tSection\t\tSize  Virtual Address   Increment\tRelative\n");				// Let's print them
 		
 		for (context_reloc_t *rel = context->relocs; rel != NULL; rel = rel->next) {
-			printf("%s\t\t%s\t\t%02X    %016llX  %lld\t\t%s\n", rel->name, rel->sect, rel->size, rel->loc,
-				   											rel->increment, rel->relative ? "Yes" : "No");
+			if (strlen(rel->name) > 7) {
+				printf("%s\t", rel->name);
+			} else {
+				printf("%s\t\t", rel->name);
+			}
+			
+			if (strlen(rel->sect) > 7) {
+				printf("%s\t", rel->sect);
+			} else {
+				printf("%s\t\t", rel->sect);
+			}
+			
+			printf("%02X    %016llX  %lld\t\t%s\n", rel->size, rel->loc, rel->increment, rel->relative ?
+				   									"Yes" : "No");
 		}
 	}
 	

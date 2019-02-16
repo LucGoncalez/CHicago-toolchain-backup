@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on February 11 of 2019, at 16:38 BRT
-// Last edited on February 15 of 2019, at 15:21 BRT
+// Last edited on February 16 of 2019, at 09:54 BRT
 
 #ifndef __CONTEXT_H__
 #define __CONTEXT_H__
@@ -10,6 +10,7 @@
 
 #define CONTEXT_SYMBOL_GLOBAL 0x00
 #define CONTEXT_SYMBOL_EXTERN 0x01
+#define CONTEXT_SYMBOL_LOCAL 0x02
 
 typedef struct context_section_s {
 	char *name;

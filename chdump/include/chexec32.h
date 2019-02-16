@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on January 27 of 2019, at 13:52 BRT
-// Last edited on January 27 of 2019, at 19:59 BRT
+// Last edited on February 16 of 2019, at 09:51 BRT
 
 #ifndef __CHEXEC32_H__
 #define __CHEXEC32_H__
@@ -14,6 +14,7 @@
 #define CHEXEC32_SECTION_FLAGS_NONE 0x01
 #define CHEXEC32_SECTION_FLAGS_ZEROINIT 0x02
 
+#define CHEXEC32_SYM_FLAGS_LOC 0x00
 #define CHEXEC32_SYM_FLAGS_NONE 0x01
 #define CHEXEC32_SYM_FLAGS_UNDEF 0x02
 
