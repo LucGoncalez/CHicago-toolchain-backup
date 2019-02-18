@@ -1,7 +1,7 @@
-// File author is Ítalo Lima Marconato Matias
+ // File author is Ítalo Lima Marconato Matias
 //
 // Created on February 11 of 2019, at 16:48 BRT
-// Last edited on February 18 of 2019, at 17:59 BRT
+// Last edited on February 18 of 2019, at 18:45 BRT
 
 #include <context.h>
 #include <stdio.h>
@@ -34,7 +34,7 @@ void context_free(context_t *context) {
 	}
 }
 
-void context_add_section(context_t *context, char *name, uintptr_t size, uintptr_t virt, uintptr_t off, uint8_t *data) {
+void context_add_section(context_t *context, char *name, uintptr_t size, uintptr_t virt, uint8_t *data) {
 	if (context == NULL || name == NULL || (size > 0 && data == NULL)) {										// Null pointer check
 		return;
 	}
@@ -46,7 +46,12 @@ void context_add_section(context_t *context, char *name, uintptr_t size, uintptr
 			uint8_t *new = realloc(cur->data, cur->size + size);												// Yes, append!
 			
 			if (new != NULL) {
-				strcpy((char*)(new + cur->size), (char*)data);
+				if (cur->size != 0) {
+					memcpy((char*)new, (char*)cur->data, cur->size);
+				}
+				
+				memcpy((char*)(new + cur->size), (char*)data, size);
+				cur->data = new;																				// Set the new data pointer
 				cur->size += size;																				// And set the new size
 			}
 			
@@ -70,15 +75,17 @@ void context_add_section(context_t *context, char *name, uintptr_t size, uintptr
 	cur->name = name;																							// Set the name
 	cur->size = size;																							// Set the size
 	cur->virt = virt;																							// Set the virtual address
-	cur->off = off;																								// Set the offset of the section in the file
-	cur->data = malloc(size);																					// And the data
 	
-	if (cur->data == NULL) {
-		free(cur);																								// Failed :(
-		return;
+	if (size > 0) {
+		cur->data = malloc(size);																				// And the data
+
+		if (cur->data == NULL) {
+			free(cur);																							// Failed :(
+			return;
+		}
+
+		memcpy((char*)cur->data, (char*)data, size);
 	}
-	
-	strcpy((char*)(cur->data), (char*)data);
 	
 	if (context->sections == NULL) {																			// First entry?
 		context->sections = cur;																				// Yeah
@@ -240,8 +247,7 @@ int context_merge(context_t *dst, context_t *src) {
 	}
 	
 	for (context_section_t *sect = src->sections; sect != NULL; sect = sect->next) {							// Now, add/merge the sections
-		context_add_section(dst, sect->name, sect->size, context_get_virt(dst, sect->name), sect->off,
-							sect->data);
+		context_add_section(dst, sect->name, sect->size, context_get_virt(dst, sect->name), sect->data);
 	}
 	
 	for (context_reloc_t *rel = src->relocs; rel != NULL; rel = rel->next) {									// Now, add the relocations

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on February 11 of 2019, at 16:38 BRT
-// Last edited on February 18 of 2019, at 17:54 BRT
+// Last edited on February 18 of 2019, at 18:09 BRT
 
 #ifndef __CONTEXT_H__
 #define __CONTEXT_H__
@@ -16,7 +16,6 @@ typedef struct context_section_s {
 	char *name;
 	uintptr_t size;
 	uintptr_t virt;
-	uintptr_t off;
 	uint8_t *data;
 	uintptr_t last;
 	struct context_section_s *next;
@@ -44,11 +43,12 @@ typedef struct {
 	context_section_t *sections;
 	context_symbol_t *symbols;
 	context_reloc_t *relocs;
+	uintptr_t entry;
 } context_t;
 
 context_t *context_new();
 void context_free(context_t *context);
-void context_add_section(context_t *context, char *name, uintptr_t size, uintptr_t virt, uintptr_t off, uint8_t *data);
+void context_add_section(context_t *context, char *name, uintptr_t size, uintptr_t virt, uint8_t *data);
 int context_add_symbol(context_t *context, char *name, char *sect, uint8_t type, uintptr_t loc);
 void context_add_relocation(context_t *context, char *name, char *sect, uint8_t size, uintptr_t loc, int inc, int rel);
 int context_merge(context_t *dst, context_t *src);

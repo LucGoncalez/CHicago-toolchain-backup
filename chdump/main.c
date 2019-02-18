@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on January 28 of 2019, at 16:47 BRT
-// Last edited on February 16 of 2019, at 13:57 BRT
+// Last edited on February 18 of 2019, at 19:00 BRT
 
 #include <exec.h>
 #include <stdio.h>
@@ -140,7 +140,7 @@ int main(int argc, char **argv) {
 		printf("Relocations:\nName\t\tSection\t\tSize  Virtual Address   Increment\tRelative\n");				// Let's print them
 		
 		for (context_reloc_t *rel = context->relocs; rel != NULL; rel = rel->next) {
-			if (strlen(rel->name) > 7) {
+			if (rel->name != NULL && (strlen(rel->name) > 7)) {
 				printf("%s\t", rel->name);
 			} else {
 				printf("%s\t\t", rel->name);

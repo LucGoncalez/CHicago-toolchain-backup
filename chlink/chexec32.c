@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on February 15 of 2019, at 15:09 BRT
-// Last edited on February 18 of 2019, at 16:51 BRT
+// Last edited on February 18 of 2019, at 18:41 BRT
 
 #include <chexec32.h>
 #include <exec.h>
@@ -44,7 +44,7 @@ static int chexec32_load(context_t *context, char *file) {
 		
 		name[sect->name_len] = 0;																						// Zero end it
 		
-		context_add_section(context, name, sect->size, sect->virt, sect->offset, (uint8_t*)(file + sect->offset));		// Add the section
+		context_add_section(context, name, sect->size, sect->virt, (uint8_t*)(file + sect->offset));					// Add the section
 		
 		incr += sect->name_len * sizeof(wchar_t);																		// Save the name length
 	}
