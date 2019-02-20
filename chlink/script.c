@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on February 18 of 2019, at 17:08 BRT
-// Last edited on February 18 of 2019, at 19:04 BRT
+// Last edited on February 20 of 2019, at 17:55 BRT
 
 #include <context.h>
 #include <inttypes.h>
@@ -291,6 +291,8 @@ context_t *parse_script(context_t *src, char *script, char *code) {
 		return NULL;																							// ...
 	}
 	
+	context->arch = src->arch;
+	
 	char *cur = code;																							// Let's go!
 	int line = 0;
 	
@@ -390,6 +392,14 @@ context_t *parse_script(context_t *src, char *script, char *code) {
 			printf("%s: %d: unexpected '%c'\n", script, line, *cur);
 			context_free(context);
 			return NULL;
+		}
+	}
+	
+	for (context_dep_t *dep = src->deps; dep != NULL; dep = dep->next) {										// Now, let's add all the dependencies
+		context_add_dep(context, dep->name);
+		
+		for (context_dep_sym_t *sym = dep->syms; sym != NULL; sym = sym->next) {
+			context_add_dep_sym(context, dep->name, sym->name);
 		}
 	}
 	

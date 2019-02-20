@@ -1,7 +1,7 @@
  // File author is Ítalo Lima Marconato Matias
 //
 // Created on February 11 of 2019, at 16:48 BRT
-// Last edited on February 18 of 2019, at 18:45 BRT
+// Last edited on February 20 of 2019, at 18:02 BRT
 
 #include <context.h>
 #include <stdio.h>
@@ -28,6 +28,11 @@ void context_free(context_t *context) {
 		for (context_reloc_t *rel = context->relocs, *next; rel != NULL; rel = next) {							// Let's free the relocations
 			next = rel->next;																					// Set the next entry
 			free(rel);																							// Free the reloc struct
+		}
+		
+		for (context_dep_t *dep = context->deps, *next; dep != NULL; dep = next) {								// Let's free the dependencies
+			next = dep->next;																					// Set the next entry
+			free(dep);																							// Free the dep struct
 		}
 		
 		free(context);																							// And the context struct!
@@ -175,6 +180,87 @@ void context_add_relocation(context_t *context, char *name, char *sect, uint8_t 
 	}
 }
 
+void context_add_dep(context_t *context, char *name) {
+	if (context == NULL || name == NULL) {																		// Null pointer check
+		return;
+	}
+	
+	context_dep_t *cur = context->deps;																			// Let's search!
+	
+	for (; cur != NULL; cur = cur->next) {
+		if ((strlen(name) == strlen(cur->name)) && !strcmp(name, cur->name)) {									// Found?
+			return;
+		} else if (cur->next == NULL) {																			// We need to create this dep?
+			break;																								// Yes
+		}
+	}
+	
+	if (cur != NULL) {																							// First dep?
+		cur->next = calloc(1, sizeof(context_dep_t));															// Nope, alloc it and save as the last entry
+		cur = cur->next;
+	} else {
+		cur = calloc(1, sizeof(context_dep_t));																	// Yes, alloc it
+	}
+	
+	if (cur == NULL) {
+		return;																									// Failed to alloc
+	}
+	
+	cur->name = name;																							// Ok, set the name
+	
+	if (context->deps == NULL) {																				// First entry?
+		context->deps = cur;																					// Yeah
+	}
+}
+
+int context_add_dep_sym(context_t *context, char *dep, char *name) {
+	if (context == NULL || dep == NULL || name == NULL) {														// Null pointer checks
+		return 0;
+	}
+	
+	context_dep_t *deps = context->deps;																		// Let's search!
+	
+	for (; deps != NULL; deps = deps->next) {
+		if ((strlen(name) == strlen(deps->name)) && !strcmp(name, deps->name)) {								// Found?
+			break;
+		}
+	}
+	
+	if (deps == NULL) {
+		return 0;																								// Not found :(
+	}
+	
+	context_dep_sym_t *cur = deps->syms;																		// Let's search!
+	
+	for (; cur != NULL; cur = cur->next) {
+		if ((strlen(name) == strlen(cur->name)) && !strcmp(name, cur->name)) {									// Found?
+			printf("Error: redefinition of '%s'\n", name);														// Redefinition :(
+			return 0;
+		} else if (cur->next == NULL) {																			// We need to create this sym?
+			break;																								// Yes
+		}
+	}
+	
+	if (cur != NULL) {																							// First sym?
+		cur->next = calloc(1, sizeof(context_dep_sym_t));														// Nope, alloc it and save as the last entry
+		cur = cur->next;
+	} else {
+		cur = calloc(1, sizeof(context_dep_sym_t));																// Yes, alloc it
+	}
+	
+	if (cur == NULL) {
+		return 0;																								// Failed to alloc
+	}
+	
+	cur->name = name;																							// Ok, set the name
+	
+	if (deps->syms == NULL) {																					// First entry?
+		deps->syms = cur;																						// Yeah
+	}
+	
+	return 1;
+}
+
 static context_symbol_t *context_get_sym(context_t *context, char *name) {
 	for (context_symbol_t *sym = context->symbols; sym != NULL; sym = sym->next) {								// Let's search
 		if ((strlen(sym->name) == strlen(name)) && !strcmp(sym->name, name)) {									// Found?
@@ -224,9 +310,27 @@ static uintptr_t context_get_virt(context_t *context, char *name) {
 	return sect->virt + sect->size;
 }
 
+uintptr_t context_get_section_start(context_t *context, char *name) {
+	if (context == NULL || name == NULL) {																		// Sanity checks
+		return 0;
+	}
+	
+	context_section_t *sect = context_get_sect(context, name);													// Try to get the section
+	
+	return sect != NULL ? sect->virt : 0;																		// And return the virt address
+}
+
 int context_merge(context_t *dst, context_t *src) {
 	if (dst == NULL || src == NULL) {																			// Sanity checks
 		return 0;
+	} else if ((dst->arch != NULL && src->arch != NULL) &&
+			   ((strlen(dst->arch) != strlen(src->arch) || strcmp(dst->arch, src->arch)))) {					// ...
+		printf("Error: trying to link file from arch '%s' with file from arch '%s'\n", dst->arch, src->arch);
+		return 0;
+	}
+	
+	if (dst->arch == NULL) {																					// Set the arch (if required)
+		dst->arch = src->arch;
 	}
 	
 	for (context_section_t *sect = dst->sections; sect != NULL; sect = sect->next) {							// Clear the ->last

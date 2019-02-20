@@ -1,13 +1,24 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on February 16 of 2019, at 20:21 BRT
-// Last edited on February 18 of 2019, at 19:01 BRT
+// Last edited on February 20 of 2019, at 18:20 BRT
 
 #include <exec.h>
 #include <script.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifndef SYSROOT
+#define SYSROOT ""
+#endif
+
+#define SYSROOT_PATH(path) SYSROOT path
+
+typedef struct lib_search_path_s {
+	char *path;
+	struct lib_search_path_s *next;
+} lib_search_path_t;
 
 static void *read_file(char *fname) {
 	FILE *file = fopen(fname, "rb");																			// Try to open the file
@@ -39,15 +50,76 @@ static void *read_file(char *fname) {
 	return buf;																									// Return the buffer!
 }
 
+static lib_search_path_t *create_search_paths(char *first) {
+	lib_search_path_t *paths = calloc(1, sizeof(lib_search_path_t));											// Alloc space for the first search path
+	
+	if (paths != NULL) {																						// Ok?
+		paths->path = first;																					// Yes, so set it!
+	}
+	
+	return paths;
+}
+
+static void add_search_path(lib_search_path_t *paths, char *path) {
+	lib_search_path_t *cur = paths;																				// Let's find the last entry
+	
+	for (; cur != NULL; cur = cur->next) {
+		if ((strlen(cur->path) == strlen(path)) && !strcmp(cur->path, path)) {									// This path already exists?
+			return;																								// Yes
+		} else if (cur->next == NULL) {
+			break;																								// End!
+		}
+	}
+	
+	cur->next = calloc(1, sizeof(lib_search_path_t));															// Alloc
+	
+	if (cur->next == NULL) {
+		return;																									// Failed >:(
+	}
+	
+	cur->next->path = path;																						// And set the path
+}
+
+static char *find_in_search_path(lib_search_path_t *paths, char *file) {
+	for (lib_search_path_t *cur = paths; cur != NULL; cur = cur->next) {										// Let's search in the search paths!
+		char *path = malloc(strlen(cur->path) + strlen(file) + 2);												// Let's concat the path and the file name
+		
+		if (path != NULL) {
+			strcpy(path, cur->path);
+			strcat(path, "/");
+			strcat(path, file);
+			
+			char *readed = read_file(path);																		// And try to read the file
+			
+			free(path);
+			
+			if (readed != NULL) {																				// Ok?
+				return readed;																					// Yes, we found it :)
+			}
+		}
+	}
+	
+	return NULL;																								// Not found :(
+}
+
 int main(int argc, char **argv) {
 	if (argc < 2) {																								// Check if we have any arguments
 		printf("Usage: %s [options] files\n", argv[0]);															// We don't have any, just print the usage
 		return 1;
 	}
 	
+	int temp = 0;
 	int inputs = 0;
+	char *output = NULL;
 	char *format = NULL;
 	char *script = NULL;
+	lib_search_path_t *paths = create_search_paths(SYSROOT_PATH("/Libraries"));									// Let's create the search path struct
+	
+	if (paths == NULL) {
+		printf("Error: couldn't create the search path struct\n");												// ...
+		return 1;
+	}
+	
 	context_t *context = context_new();																			// Let's create the context
 	
 	if (context == NULL) {
@@ -61,8 +133,12 @@ int main(int argc, char **argv) {
 			printf("Options:\n");
 			printf("    -h or --help          Show this help dialog\n");
 			printf("    -v or --version       Show the version of this program\n");
+			printf("    -o or --output        Set the output filename\n");
 			printf("    -T or --script        Set the linker script\n");
+			printf("    -L or --library-path  Add a path to the library search path\n");
+			printf("    -l or --library       Add a library as dependency\n");
 			printf("Supported formats: "); exec_list_all();
+			exec_help_all();
 			context_free(context);
 			return 0;
 		} else if ((!strcmp(argv[i], "-v")) || (!strcmp(argv[i], "--version"))) {								// Version
@@ -70,12 +146,56 @@ int main(int argc, char **argv) {
 			printf("CHicago Linker Version 1.0\n");
 			context_free(context);
 			return 0;
+		} else if ((!strcmp(argv[i], "-o")) || (!strcmp(argv[i], "--output"))) {								// Set the output
+			if ((i + 1) >= argc) {
+				printf("Expected filename after '%s'\n", argv[i]);
+				context_free(context);
+				return 1;
+			} else {
+				output = argv[++i];
+			}
 		} else if ((!strcmp(argv[i], "-T")) || (!strcmp(argv[i], "--script"))) {								// Set the script file
 			if ((i + 1) >= argc) {
 				printf("Error: expected filename after '%s'\n", argv[i]);
+				context_free(context);
 				return 1;
 			} else {
 				script = argv[++i];
+			}
+		} else if ((!strcmp(argv[i], "-L")) || (!strcmp(argv[i], "--library-path"))) {							// Add path to the lib search paths
+			if ((i + 1) >= argc) {
+				printf("Error: expected path after '%s'\n", argv[i]);
+				context_free(context);
+				return 1;
+			} else {
+				add_search_path(paths, argv[++i]);
+			}
+		} else if ((!strcmp(argv[i], "-l")) || (!strcmp(argv[i], "--library"))) {								// Add lib as dep
+			if ((i + 1) >= argc) {
+				printf("Error: expected library name after '%s'\n", argv[i]);
+				context_free(context);
+				return 1;
+			} else {
+				char *fnam = argv[++i];
+				char *file = find_in_search_path(paths, fnam);
+				
+				if (file == NULL) {
+					printf("Error: couldn't open '%s'\n", fnam);												// ...
+					context_free(context);
+					return 1;
+				} else if (!exec_add_dep(context, fnam, file)) {												// Load it!
+					free(file);
+					context_free(context);
+					return 1;
+				}
+				
+				free(file);
+			}
+		} else if ((temp = exec_option(format, argc, argv, i)) != 0) {											// Executable format-specific option?
+			if (temp == -1) {
+				return 1;																						// Failed...
+			} else if (temp != -2) {
+				i += temp;
 			}
 		} else {
 			char *file = read_file(argv[i]);																	// Input file! Try to read it
@@ -116,6 +236,8 @@ int main(int argc, char **argv) {
 		printf("Error: expected at least one input file\n");													// No...
 		context_free(context);
 		return 1;
+	} else if (output == NULL) {																				// Set the output name?
+		output = "a.out";																						// Yeah
 	} else if (script != NULL) {																				// We have a linker script?
 		char *code = read_file(script);																			// Yes, open it :)
 		
@@ -138,75 +260,18 @@ int main(int argc, char **argv) {
 		free(code);
 	}
 	
-	int newline = 0;
+	FILE *out = fopen(output, "wb");																			// Try to open the output file
 	
-	if (context->sections != NULL) {																			// We have sections?
-		printf("Sections:\nName\t\tSize              Virtual Address\n");										// Yes, print them!
-		
-		for (context_section_t *sect = context->sections; sect != NULL; sect = sect->next) {
-			if (strlen(sect->name) > 7) {
-				printf("%s\t%016llX  %016llX\n", sect->name, sect->size, sect->virt);
-			} else {
-				printf("%s\t\t%016llX  %016llX\n", sect->name, sect->size, sect->virt);
-			}
-		}
-		
-		newline = 1;
+	if (out == NULL) {
+		printf("Error: couldn't open the output file\n");														// Failed
+		context_free(context);
+		return 1;
 	}
 	
-	if (context->symbols != NULL) {																				// We have symbols?
-		if (newline) {																							// Yes, print newline first?
-			printf("\n");																						// Yes
-		}
-		
-		printf("Symbols:\nName\t\tSection\t\tType    Section Offset\n");										// Let's print them!
-		
-		for (context_symbol_t *sym = context->symbols; sym != NULL; sym = sym->next) {
-			if (strlen(sym->name) > 7) {
-				printf("%s\t", sym->name);
-			} else {
-				printf("%s\t\t", sym->name);
-			}
-			
-			if (strlen(sym->sect) > 7) {
-				printf("%s\t", sym->sect);
-			} else {
-				printf("%s\t\t", sym->sect);
-			}
-			
-			printf("%s  %016llX\n", sym->type == 1 ? "Extern" : (sym->type == 0 ? "Global" : "Local "),
-				   					sym->loc);
-		}
-		
-		newline = 1;
-	}
+	int res = exec_gen(format, context, out);																	// Generate the output!
 	
-	if (context->relocs != NULL) {																				// We have relocations?
-		if (newline) {																							// Yes, print newline first?
-			printf("\n");																						// Yes
-		}
-		
-		printf("Relocations:\nName\t\tSection\t\tSize  Virtual Address   Increment\tRelative\n");				// Let's print them
-		
-		for (context_reloc_t *rel = context->relocs; rel != NULL; rel = rel->next) {
-			if (rel->name != NULL && (strlen(rel->name) > 7)) {
-				printf("%s\t", rel->name);
-			} else {
-				printf("%s\t\t", rel->name);
-			}
-			
-			if (strlen(rel->sect) > 7) {
-				printf("%s\t", rel->sect);
-			} else {
-				printf("%s\t\t", rel->sect);
-			}
-			
-			printf("%02X    %016llX  %lld\t\t%s\n", rel->size, rel->loc, rel->increment, rel->relative ?
-				   									"Yes" : "No");
-		}
-	}
-	
+	fclose(out);
 	context_free(context);
 	
-	return 0;
+	return !res;
 }

@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on January 27 of 2019, at 13:52 BRT
-// Last edited on February 16 of 2019, at 13:49 BRT
+// Last edited on February 20 of 2019, at 18:26 BRT
 
 #include <arch.h>
 #include <chexec32.h>
@@ -128,7 +128,7 @@ static int chexec32_write_rel(FILE *out, char *n, uint32_t virt, int incr, int s
 			  (size == 2 ? CHEXEC32_REL_OP_WORD : CHEXEC32_REL_OP_DWORD);						// Set the size of the relocation
 	rel.incr = incr;																			// Set the increment
 	rel.virt = virt;																			// Set the virtual address of the relocation
-	rel.name_len = strlen(n);																	// Set the length of the name
+	rel.name_len = n != NULL ? strlen(n) : 0;													// Set the length of the name
 	
 	if (!fwrite(&rel, sizeof(chexec32_rel_t), 1, out)) {										// Write the header!
 		return 0;																				// Failed
