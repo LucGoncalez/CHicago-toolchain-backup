@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on January 27 of 2019, at 13:52 BRT
-// Last edited on February 18 of 2019, at 16:50 BRT
+// Last edited on February 22 of 2019, at 21:24 BRT
 
 #ifndef __CHEXEC32_H__
 #define __CHEXEC32_H__
@@ -25,10 +25,10 @@
 #define CHEXEC32_REL_OP_ABS 0x00
 #define CHEXEC32_REL_OP_REL 0x01
 #define CHEXEC32_REL_OP_SYM 0x02
-#define CHEXEC32_REL_OP_REL_SYM 0x03
-#define CHEXEC32_REL_OP_BYTE 0x04
-#define CHEXEC32_REL_OP_WORD 0x08
-#define CHEXEC32_REL_OP_DWORD 0x10
+#define CHEXEC32_REL_OP_REL_SYM 0x04
+#define CHEXEC32_REL_OP_BYTE 0x08
+#define CHEXEC32_REL_OP_WORD 0x10
+#define CHEXEC32_REL_OP_DWORD 0x20
 
 typedef struct {
 	uint32_t magic;

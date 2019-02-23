@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on January 27 of 2019, at 13:52 BRT
-// Last edited on February 20 of 2019, at 18:26 BRT
+// Last edited on February 22 of 2019, at 21:42 BRT
 
 #include <arch.h>
 #include <chexec32.h>
@@ -41,14 +41,14 @@ static uint32_t chexec32_write_hdr(codegen_t *codegen, FILE *out) {
 	
 	for (codegen_section_t *cur = codegen->sections; cur != NULL; cur = cur->next) {			// Let's get the amount of sections
 		hdr.sh_count++;
-		hdr.st_start += sizeof(chexec32_section_t) + strlen(cur->name) * sizeof(wchar_t);
-		hdr.rel_start += sizeof(chexec32_section_t) + strlen(cur->name) * sizeof(wchar_t);
+		hdr.st_start += sizeof(chexec32_section_t) + (strlen(cur->name) + 1) * sizeof(wchar_t);
+		hdr.rel_start += sizeof(chexec32_section_t) + (strlen(cur->name) + 1) * sizeof(wchar_t);
 	}
 	
 	for (codegen_label_t *cur = codegen->labels; cur != NULL; cur = cur->next) {				// Let's get the amount of symbols
 		if (cur->local_resolved) {
 			hdr.st_count++;
-			hdr.rel_start += sizeof(chexec32_sym_t) + strlen(cur->name) * sizeof(wchar_t);
+			hdr.rel_start += sizeof(chexec32_sym_t) + (strlen(cur->name) + 1) * sizeof(wchar_t);
 		}
 	}
 	
@@ -56,7 +56,7 @@ static uint32_t chexec32_write_hdr(codegen_t *codegen, FILE *out) {
 	
 	for (codegen_reloc_t *cur = codegen->relocs; cur != NULL; cur = cur->next) {				// And the amount of relocs
 		hdr.rel_count++;
-		ret += sizeof(chexec32_rel_t) + (cur->name != NULL ? strlen(cur->name) *
+		ret += sizeof(chexec32_rel_t) + (cur->name != NULL ? (strlen(cur->name) + 1) *
 										 					 sizeof(wchar_t) : 0);
 	}
 	
@@ -76,7 +76,7 @@ static int chexec32_write_section(FILE *out, char *n, uint32_t v, uint32_t o, ui
 	shdr.offset = o;																			// Set the offset in the file
 	shdr.virt = v;																				// Set the virtual address
 	shdr.size = s;																				// Set the size
-	shdr.name_len = strlen(n);																	// Set the length of the name
+	shdr.name_len = strlen(n) + 1;																// Set the length of the name
 	
 	if (!fwrite(&shdr, sizeof(chexec32_section_t), 1, out)) {									// Write the header!
 		return 0;																				// Failed
@@ -100,7 +100,7 @@ static int chexec32_write_sym(FILE *out, char *n, uint32_t v, int b) {
 	sym.flags = b == CODEGEN_LABEL_EXTERN ? CHEXEC32_SYM_FLAGS_UNDEF :
 				(b == CODEGEN_LABEL_LOCAL ? CHEXEC32_SYM_FLAGS_LOC : CHEXEC32_SYM_FLAGS_NONE);	// Set the flags
 	sym.virt = v;																				// Set the virtual address
-	sym.name_len = strlen(n);																	// Set the length of the name
+	sym.name_len = strlen(n) + 1;																// Set the length of the name
 	
 	if (!fwrite(&sym, sizeof(chexec32_sym_t), 1, out)) {										// Write the header!
 		return 0;																				// Failed
@@ -128,7 +128,7 @@ static int chexec32_write_rel(FILE *out, char *n, uint32_t virt, int incr, int s
 			  (size == 2 ? CHEXEC32_REL_OP_WORD : CHEXEC32_REL_OP_DWORD);						// Set the size of the relocation
 	rel.incr = incr;																			// Set the increment
 	rel.virt = virt;																			// Set the virtual address of the relocation
-	rel.name_len = n != NULL ? strlen(n) : 0;													// Set the length of the name
+	rel.name_len = n != NULL ? strlen(n) + 1 : 0;												// Set the length of the name
 	
 	if (!fwrite(&rel, sizeof(chexec32_rel_t), 1, out)) {										// Write the header!
 		return 0;																				// Failed

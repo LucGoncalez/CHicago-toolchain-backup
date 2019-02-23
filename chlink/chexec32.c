@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on February 15 of 2019, at 15:09 BRT
-// Last edited on February 20 of 2019, at 18:22 BRT
+// Last edited on February 22 of 2019, at 21:43 BRT
 
 #include <chexec32.h>
 #include <exec.h>
@@ -79,7 +79,7 @@ static int chexec32_load(context_t *context, char *file) {
 	
 	for (uint32_t i = 0; i < hdr->sh_count; i++) {																		// First, let's add all the sections!
 		chexec32_section_t *sect = (chexec32_section_t*)(file + hdr->sh_start + i * sizeof(chexec32_section_t) + incr);	// Get the location (offset) of this one
-		char *name = malloc(sect->name_len + 1);																		// Let's convert the name from wchar_t to char
+		char *name = malloc(sect->name_len);																			// Let's convert the name from wchar_t to char
 		
 		if (name == NULL) {
 			return -1;																									// Failed to alloc
@@ -88,8 +88,6 @@ static int chexec32_load(context_t *context, char *file) {
 		for (uint32_t j = 0; j < sect->name_len; j++) {
 			name[j] = (char)sect->name[j];
 		}
-		
-		name[sect->name_len] = 0;																						// Zero end it
 		
 		context_add_section(context, name, sect->size, sect->virt, (uint8_t*)(file + sect->offset));					// Add the section
 		
@@ -100,7 +98,7 @@ static int chexec32_load(context_t *context, char *file) {
 	
 	for (uint32_t i = 0; i < hdr->st_count; i++) {																		// Now, let's add all the symbols!
 		chexec32_sym_t *sym = (chexec32_sym_t*)(file + hdr->st_start + i * sizeof(chexec32_sym_t) + incr);				// Get the location (offset) of this one
-		char *name = malloc(sym->name_len + 1);																			// Let's convert the name from wchar_t to char
+		char *name = malloc(sym->name_len);																				// Let's convert the name from wchar_t to char
 		
 		if (name == NULL) {
 			return -1;																									// Failed to alloc
@@ -109,8 +107,6 @@ static int chexec32_load(context_t *context, char *file) {
 		for (uint32_t j = 0; j < sym->name_len; j++) {
 			name[j] = (char)sym->name[j];
 		}
-		
-		name[sym->name_len] = 0;																						// Zero end it
 		
 		uint8_t type = sym->flags & CHEXEC32_SYM_FLAGS_UNDEF ? CONTEXT_SYMBOL_EXTERN :
 					   (sym->flags & CHEXEC32_SYM_FLAGS_NONE ? CONTEXT_SYMBOL_GLOBAL : CONTEXT_SYMBOL_LOCAL);
@@ -131,7 +127,7 @@ static int chexec32_load(context_t *context, char *file) {
 		char *name = NULL;
 		
 		if (rel->name_len != 0) {																						// Have a name?
-			name = malloc(rel->name_len + 1);																			// Yes, let's convert it from wchar_t to char
+			name = malloc(rel->name_len);																				// Yes, let's convert it from wchar_t to char
 
 			if (name == NULL) {
 				return -1;																								// Failed to alloc
@@ -140,8 +136,6 @@ static int chexec32_load(context_t *context, char *file) {
 			for (uint32_t j = 0; j < rel->name_len; j++) {
 				name[j] = (char)rel->name[j];
 			}
-
-			name[rel->name_len] = 0;																					// Zero end it
 		}
 		
 		uint8_t size = rel->op & CHEXEC32_REL_OP_BYTE ? 1 : (rel->op & CHEXEC32_REL_OP_WORD ? 2 : 4);					// Get the size
@@ -179,7 +173,7 @@ static int chexec32_add_dep(context_t *context, char *fname, char *file) {
 			continue;
 		}
 		
-		char *name = malloc(sym->name_len + 1);																			// Let's convert the name from wchar_t to char
+		char *name = malloc(sym->name_len);																				// Let's convert the name from wchar_t to char
 		
 		if (name == NULL) {
 			return -1;																									// Failed to alloc
@@ -188,8 +182,6 @@ static int chexec32_add_dep(context_t *context, char *fname, char *file) {
 		for (uint32_t j = 0; j < sym->name_len; j++) {
 			name[j] = (char)sym->name[j];
 		}
-		
-		name[sym->name_len] = 0;																						// Zero end it
 		
 		if (!context_add_dep_sym(context, fname, name)) {																// Add the symbol
 			return -1;																									// :(
@@ -230,27 +222,27 @@ static uint32_t chexec32_write_hdr(context_t *context, FILE *out) {
 	
 	for (context_section_t *cur = context->sections; cur != NULL; cur = cur->next) {									// Let's get the amount of sections
 		hdr.sh_count++;
-		hdr.st_start += sizeof(chexec32_section_t) + strlen(cur->name) * sizeof(wchar_t);
-		hdr.rel_start += sizeof(chexec32_section_t) + strlen(cur->name) * sizeof(wchar_t);
-		hdr.dep_start += sizeof(chexec32_section_t) + strlen(cur->name) * sizeof(wchar_t);
+		hdr.st_start += sizeof(chexec32_section_t) + (strlen(cur->name) + 1) * sizeof(wchar_t);
+		hdr.rel_start += sizeof(chexec32_section_t) + (strlen(cur->name) + 1) * sizeof(wchar_t);
+		hdr.dep_start += sizeof(chexec32_section_t) + (strlen(cur->name) + 1) * sizeof(wchar_t);
 	}
 	
 	for (context_symbol_t *cur = context->symbols; cur != NULL; cur = cur->next) {										// Let's get the amount of symbols
 		hdr.st_count++;
-		hdr.rel_start += sizeof(chexec32_sym_t) + strlen(cur->name) * sizeof(wchar_t);
-		hdr.dep_start += sizeof(chexec32_sym_t) + strlen(cur->name) * sizeof(wchar_t);
+		hdr.rel_start += sizeof(chexec32_sym_t) + (strlen(cur->name) + 1) * sizeof(wchar_t);
+		hdr.dep_start += sizeof(chexec32_sym_t) + (strlen(cur->name) + 1) * sizeof(wchar_t);
 	}
 	
 	for (context_reloc_t *cur = context->relocs; cur != NULL; cur = cur->next) {										// The amount of relocs
 		hdr.rel_count++;
-		hdr.dep_start += sizeof(chexec32_rel_t) + (cur->name != NULL ? strlen(cur->name) * sizeof(wchar_t) : 0);
+		hdr.dep_start += sizeof(chexec32_rel_t) + (cur->name != NULL ? (strlen(cur->name) + 1) * sizeof(wchar_t) : 0);
 	}
 	
 	ret = hdr.dep_start;																								// Set the base return value
 	
 	for (context_dep_t *cur = context->deps; cur != NULL; cur = cur->next) {											// And the amount of deps
 		hdr.dep_count++;
-		ret += sizeof(chexec32_dep_t) + strlen(cur->name) * sizeof(wchar_t);
+		ret += sizeof(chexec32_dep_t) + (strlen(cur->name) + 1) * sizeof(wchar_t);
 	}
 	
 	if (!fwrite(&hdr, sizeof(chexec32_header_t), 1, out)) {																// Write the header!
@@ -269,7 +261,7 @@ static int chexec32_write_section(FILE *out, char *n, uint32_t v, uint32_t o, ui
 	shdr.offset = o;																									// Set the offset in the file
 	shdr.virt = v;																										// Set the virtual address
 	shdr.size = s;																										// Set the size
-	shdr.name_len = strlen(n);																							// Set the length of the name
+	shdr.name_len = strlen(n) + 1;																						// Set the length of the name
 	
 	if (!fwrite(&shdr, sizeof(chexec32_section_t), 1, out)) {															// Write the header!
 		return 0;																										// Failed
@@ -293,7 +285,7 @@ static int chexec32_write_sym(FILE *out, char *n, uint32_t v, int b) {
 	sym.flags = b == CONTEXT_SYMBOL_EXTERN ? CHEXEC32_SYM_FLAGS_UNDEF :
 				(b == CONTEXT_SYMBOL_LOCAL ? CHEXEC32_SYM_FLAGS_LOC : CHEXEC32_SYM_FLAGS_NONE);							// Set the flags
 	sym.virt = v;																										// Set the virtual address
-	sym.name_len = strlen(n);																							// Set the length of the name
+	sym.name_len = strlen(n) + 1;																						// Set the length of the name
 	
 	if (!fwrite(&sym, sizeof(chexec32_sym_t), 1, out)) {																// Write the header!
 		return 0;																										// Failed
@@ -319,7 +311,7 @@ static int chexec32_write_rel(FILE *out, char *n, uint32_t virt, int incr, int s
 	rel.op |= size == 1 ? CHEXEC32_REL_OP_BYTE : (size == 2 ? CHEXEC32_REL_OP_WORD : CHEXEC32_REL_OP_DWORD);			// Set the size of the relocation
 	rel.incr = incr;																									// Set the increment
 	rel.virt = virt;																									// Set the virtual address of the relocation
-	rel.name_len = n != NULL ? strlen(n) : 0;																			// Set the length of the name
+	rel.name_len = n != NULL ? strlen(n) + 1 : 0;																		// Set the length of the name
 	
 	if (!fwrite(&rel, sizeof(chexec32_rel_t), 1, out)) {																// Write the header!
 		return 0;																										// Failed
@@ -340,7 +332,7 @@ static int chexec32_write_dep(FILE *out, char *n) {
 	
 	memset(&dep, 0, sizeof(chexec32_dep_t));																			// Fill the header with 0
 	
-	dep.name_len = strlen(n);																							// Set the length of the name
+	dep.name_len = strlen(n) + 1;																						// Set the length of the name
 	
 	if (!fwrite(&dep, sizeof(chexec32_dep_t), 1, out)) {																// Write the header!
 		return 0;																										// Failed

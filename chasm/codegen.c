@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 28 of 2018, at 17:15 BRT
-// Last edited on January 14 of 2019, at 14:19 BRT
+// Last edited on February 23 of 2019, at 11:50 BRT
 
 #include <arch.h>
 #include <stdio.h>
@@ -268,7 +268,7 @@ int codegen_gen(codegen_t *codegen) {
 			
 			if (lbl == NULL) {																					// Doesn't exists?
 				codegen_add_label(codegen, ((global_directive_node_t*)node)->name, CODEGEN_LABEL_GLOBAL, 0);	// So let's create it!
-			} else if (lbl->type == CODEGEN_LABEL_LOCAL) {														// We can make it global?
+			} else {																							// We can make it global?
 				lbl->type = CODEGEN_LABEL_GLOBAL;																// Yes!
 			}
 		} else if (node->type == NODE_TYPE_EXTERN_DIRECTIVE) {													// Import external symbol?
@@ -329,7 +329,18 @@ int codegen_gen(codegen_t *codegen) {
 				char *str = ((string_node_t*)node->childs)->value;												// Yes
 				
 				for (size_t i = 0; i < strlen(str); i++) {														// Write!
-					codegen_write_byte(codegen, str[i]);
+					if (def->size == 1) {																		// Byte
+						codegen_write_byte(codegen, str[i]);
+					} else if (def->size == 2) {																// Word
+						codegen_write_word(codegen, str[i]);
+					} else if (def->size == 4) {																// DWord
+						codegen_write_dword(codegen, str[i]);
+					} else if (def->size == 8) {																// QWord
+						codegen_write_qword(codegen, str[i]);
+					} else if (def->size == 10) {																// Extended precision floating point
+						codegen_write_qword(codegen, str[i]);
+						codegen_write_word(codegen, 0);
+					}
 				}
 			} else if (node->childs->type == NODE_TYPE_FLOAT) {													// Put a floating point number?
 				float_node_t *num = (float_node_t*)node->childs;												// Yeah!
