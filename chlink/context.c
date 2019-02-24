@@ -1,7 +1,7 @@
- // File author is Ítalo Lima Marconato Matias
+// File author is Ítalo Lima Marconato Matias
 //
 // Created on February 11 of 2019, at 16:48 BRT
-// Last edited on February 20 of 2019, at 18:02 BRT
+// Last edited on February 24 of 2019, at 15:18 BRT
 
 #include <context.h>
 #include <stdio.h>
@@ -17,21 +17,38 @@ void context_free(context_t *context) {
 		for (context_section_t *sect = context->sections, *next; sect != NULL; sect = next) {					// Let's free the sections
 			next = sect->next;																					// Set the next entry
 			free(sect->data);																					// Free the data
+			free(sect->name);																					// Free the name
 			free(sect);																							// Free the section struct
 		}
 		
 		for (context_symbol_t *sym = context->symbols, *next; sym != NULL; sym = next) {						// Let's free the symbols
 			next = sym->next;																					// Set the next entry
+			free(sym->sect);																					// Free the sect
+			free(sym->name);																					// Free the name
 			free(sym);																							// Free the symbol struct
 		}
 		
 		for (context_reloc_t *rel = context->relocs, *next; rel != NULL; rel = next) {							// Let's free the relocations
 			next = rel->next;																					// Set the next entry
+			
+			if (rel->name != NULL) {																			// Free the name?
+				free(rel->name);																				// Yes
+			}
+			
+			free(rel->sect);																					// Free the sect
 			free(rel);																							// Free the reloc struct
 		}
 		
 		for (context_dep_t *dep = context->deps, *next; dep != NULL; dep = next) {								// Let's free the dependencies
 			next = dep->next;																					// Set the next entry
+			
+			for (context_dep_sym_t *sym = dep->syms, *nexts; sym != NULL; sym = nexts) {						// Free the symbols
+				nexts = sym->next;																				// Set the next entry
+				free(sym->name);																				// Free the name
+				free(sym);																						// Free the dep sym struct
+			}
+			
+			free(dep->name);																					// Free the name
 			free(dep);																							// Free the dep struct
 		}
 		
@@ -45,16 +62,13 @@ void context_add_section(context_t *context, char *name, uintptr_t size, uintptr
 	}
 	
 	context_section_t *cur = context->sections;																	// Let's search!
+	context_section_t *last = NULL;
 	
 	for (; cur != NULL; cur = cur->next) {
 		if ((strlen(name) == strlen(cur->name)) && !strcmp(name, cur->name)) {									// Found?
 			uint8_t *new = realloc(cur->data, cur->size + size);												// Yes, append!
 			
 			if (new != NULL) {
-				if (cur->size != 0) {
-					memcpy((char*)new, (char*)cur->data, cur->size);
-				}
-				
 				memcpy((char*)(new + cur->size), (char*)data, size);
 				cur->data = new;																				// Set the new data pointer
 				cur->size += size;																				// And set the new size
@@ -68,6 +82,7 @@ void context_add_section(context_t *context, char *name, uintptr_t size, uintptr
 	
 	if (cur != NULL) {																							// First section?
 		cur->next = calloc(1, sizeof(context_section_t));														// Nope, alloc it and save as the last entry
+		last = cur;
 		cur = cur->next;
 	} else {
 		cur = calloc(1, sizeof(context_section_t));																// Yes, alloc it
@@ -77,15 +92,31 @@ void context_add_section(context_t *context, char *name, uintptr_t size, uintptr
 		return;																									// Failed to alloc
 	}
 	
-	cur->name = name;																							// Set the name
+	cur->name = strdup(name);																					// Set the name
 	cur->size = size;																							// Set the size
 	cur->virt = virt;																							// Set the virtual address
+	
+	if (cur->name == NULL) {
+		if (last != NULL) {																						// Failed to strdup the name...
+			last->next = NULL;
+		}
+		
+		free(cur);
+		
+		return;
+	}
 	
 	if (size > 0) {
 		cur->data = malloc(size);																				// And the data
 
 		if (cur->data == NULL) {
-			free(cur);																							// Failed :(
+			if (last != NULL) {																					// Failed :(
+				last->next = NULL;
+			}
+			
+			free(cur->name);
+			free(cur);
+			
 			return;
 		}
 
@@ -103,6 +134,7 @@ int context_add_symbol(context_t *context, char *name, char *sect, uint8_t type,
 	}
 	
 	context_symbol_t *cur = context->symbols;																	// Let's search!
+	context_symbol_t *last = NULL;
 	
 	for (; cur != NULL; cur = cur->next) {
 		if ((strlen(name) == strlen(cur->name)) && !strcmp(name, cur->name)) {									// Found?
@@ -127,6 +159,7 @@ int context_add_symbol(context_t *context, char *name, char *sect, uint8_t type,
 	
 	if (cur != NULL) {																							// First label?
 		cur->next = calloc(1, sizeof(context_symbol_t));														// Nope, alloc it and save as the last entry
+		last = cur;
 		cur = cur->next;
 	} else {
 		cur = calloc(1, sizeof(context_symbol_t));																// Yes, alloc it
@@ -136,10 +169,28 @@ int context_add_symbol(context_t *context, char *name, char *sect, uint8_t type,
 		return 0;																								// Failed to alloc
 	}
 	
-	cur->sect = sect;																							// Fill in the section name, the name, type and location
-	cur->name = name;
+	cur->sect = strdup(sect);																					// Fill in the section name, the name, type and location
+	cur->name = strdup(name);
 	cur->type = type;
 	cur->loc = loc;
+	
+	if (cur->sect == NULL || cur->name == NULL) {
+		if (last != NULL) {																						// Failed to strdup the name (or sect)...
+			last->next = NULL;
+		}
+		
+		if (cur->sect != NULL) {
+			free(cur->sect);
+		}
+		
+		if (cur->name != NULL) {
+			free(cur->name);
+		}
+		
+		free(cur);
+		
+		return 0;
+	}
 	
 	if (context->symbols == NULL) {																				// First entry?
 		context->symbols = cur;																					// Yeah
@@ -154,11 +205,13 @@ void context_add_relocation(context_t *context, char *name, char *sect, uint8_t 
 	}
 	
 	context_reloc_t *cur = context->relocs;																		// Let's get the last entry
+	context_reloc_t *last = NULL;
 	
 	for (; cur != NULL && cur->next != NULL; cur = cur->next) ;
 	
 	if (cur != NULL) {																							// First relocation?
 		cur->next = calloc(1, sizeof(context_reloc_t));															// Nope, alloc it and save as the last entry
+		last = cur;
 		cur = cur->next;
 	} else {
 		cur = calloc(1, sizeof(context_reloc_t));																// Yes, alloc it
@@ -168,12 +221,30 @@ void context_add_relocation(context_t *context, char *name, char *sect, uint8_t 
 		return;																									// Failed to alloc
 	}
 	
-	cur->name = name;																							// Ok, set everything!
-	cur->sect = sect;
+	cur->name = strdup(name);																					// Ok, set everything!
+	cur->sect = strdup(sect);
 	cur->size = size;
 	cur->loc = loc;
 	cur->increment = inc;
 	cur->relative = rel;
+	
+	if (cur->sect == NULL || cur->name == NULL) {
+		if (last != NULL) {																						// Failed to strdup the name (or sect)...
+			last->next = NULL;
+		}
+		
+		if (cur->sect != NULL) {
+			free(cur->sect);
+		}
+		
+		if (cur->name != NULL) {
+			free(cur->name);
+		}
+		
+		free(cur);
+		
+		return;
+	}
 	
 	if (context->relocs == NULL) {																				// First entry?
 		context->relocs = cur;																					// Yeah

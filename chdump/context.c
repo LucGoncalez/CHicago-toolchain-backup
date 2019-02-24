@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on February 11 of 2019, at 16:48 BRT
-// Last edited on February 15 of 2019, at 16:36 BRT
+// Last edited on February 24 of 2019, at 14:48 BRT
 
 #include <context.h>
 #include <stdio.h>
@@ -16,16 +16,25 @@ void context_free(context_t *context) {
 	if (context != NULL) {																						// Check if our argument is valid
 		for (context_section_t *sect = context->sections, *next; sect != NULL; sect = next) {					// Let's free the sections
 			next = sect->next;																					// Set the next entry
+			free(sect->name);																					// Free the section name
 			free(sect);																							// Free the section struct
 		}
 		
 		for (context_symbol_t *sym = context->symbols, *next; sym != NULL; sym = next) {						// Let's free the symbols
 			next = sym->next;																					// Set the next entry
+			free(sym->sect);																					// Free the symbol section name
+			free(sym->name);																					// Free the symbol name
 			free(sym);																							// Free the symbol struct
 		}
 		
 		for (context_reloc_t *rel = context->relocs, *next; rel != NULL; rel = next) {							// Let's free the relocations
 			next = rel->next;																					// Set the next entry
+			
+			if (rel->name != NULL) {																			// Free the reloc sym name?
+				free(rel->name);																				// Yes
+			}
+			
+			free(rel->sect);																					// Free the reloc sect name
 			free(rel);																							// Free the reloc struct
 		}
 		

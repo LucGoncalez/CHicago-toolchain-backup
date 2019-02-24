@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on December 02 of 2018, at 10:46 BRT
-// Last edited on January 27 of 2019, at 13:35 BRT
+// Last edited on February 24 of 2019, at 15:18 BRT
 
 #include <arch.h>
 #include <exec.h>
@@ -66,6 +66,7 @@ char *replace_extension(char *fname, char *newext) {
 int main(int argc, char **argv) {
 	char *input = NULL;
 	char *output = NULL;
+	int ofre = 0;
 	
 	if (!arch_select("x86")) {																			// Try to select the default output processor architecture
 		printf("Error: invalid arch 'x86'\n");															// Failed...
@@ -159,12 +160,18 @@ int main(int argc, char **argv) {
 		return 1;
 	} else if (output == NULL) {																		// Set the output name?
 		output = replace_extension(input, ".o");														// Yeah
+		ofre = 1;
 	}
 	
 	char *code = read_file(input);																		// Try to read the source code
 	
 	if (code == NULL) {
 		printf("Error: couldn't open '%s'\n", input);													// Failed to read it...
+		
+		if (ofre) {																						// Free the output?
+			free(output);																				// Yes
+		}
+		
 		return 1;
 	}
 	
@@ -173,6 +180,11 @@ int main(int argc, char **argv) {
 	if (lexer == NULL) {
 		printf("compilation failed\n");																	// Failed...
 		free(code);
+		
+		if (ofre) {																						// Free the output?
+			free(output);																				// Yes
+		}
+		
 		return 1;
 	}
 	
@@ -181,6 +193,11 @@ int main(int argc, char **argv) {
 	if (toks == NULL) {
 		printf("compilation failed\n");																	// Failed to lex...
 		lexer_free(lexer);
+		
+		if (ofre) {																						// Free the output?
+			free(output);																				// Yes
+		}
+		
 		return 1;
 	}
 	
@@ -190,6 +207,11 @@ int main(int argc, char **argv) {
 		printf("compilation failed\n");																	// Failed...
 		parser_free(parser);
 		lexer_free(lexer);
+		
+		if (ofre) {																						// Free the output?
+			free(output);																				// Yes
+		}
+		
 		return 1;
 	}
 	
@@ -199,6 +221,11 @@ int main(int argc, char **argv) {
 		printf("compilation failed\n");																	// Failed to parse...
 		parser_free(parser);
 		lexer_free(lexer);
+		
+		if (ofre) {																						// Free the output?
+			free(output);																				// Yes
+		}
+		
 		return 1;
 	}
 	
@@ -208,12 +235,22 @@ int main(int argc, char **argv) {
 		printf("compilation failed\n");																	// Failed...
 		parser_free(parser);
 		lexer_free(lexer);
+		
+		if (ofre) {																						// Free the output?
+			free(output);																				// Yes
+		}
+		
 		return 1;
 	} else if (!codegen_gen(codegen)) {																	// Generate!
 		printf("compilation failed\n");																	// Failed to generate...
 		codegen_free(codegen);
 		parser_free(parser);
 		lexer_free(lexer);
+		
+		if (ofre) {																						// Free the output?
+			free(output);																				// Yes
+		}
+		
 		return 1;
 	}
 	
@@ -223,6 +260,11 @@ int main(int argc, char **argv) {
 		codegen_free(codegen);																			// Failed...
 		parser_free(parser);
 		lexer_free(lexer);
+		
+		if (ofre) {																						// Free the output?
+			free(output);																				// Yes
+		}
+		
 		return 1;
 	} else if (!exec_gen(codegen, out)) {																// Try to write the data to the output file!
 		printf("compilation failed\n");																	// Failed...
@@ -230,6 +272,11 @@ int main(int argc, char **argv) {
 		codegen_free(codegen);
 		parser_free(parser);
 		lexer_free(lexer);
+		
+		if (ofre) {																						// Free the output?
+			free(output);																				// Yes
+		}
+		
 		return 1;
 	}
 	
@@ -237,6 +284,11 @@ int main(int argc, char **argv) {
 	codegen_free(codegen);																				// Free the codegen struct
 	parser_free(parser);																				// Free the parser struct
 	lexer_free(lexer);																					// Free the lexer struct
+	
+	if (ofre) {																							// Free the output?
+		free(output);																					// Yes
+	}
+	
 	
 	return 0;
 }

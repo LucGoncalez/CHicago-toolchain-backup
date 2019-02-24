@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on February 16 of 2019, at 20:21 BRT
-// Last edited on February 20 of 2019, at 18:20 BRT
+// Last edited on February 24 of 2019, at 15:19 BRT
 
 #include <exec.h>
 #include <script.h>
@@ -58,6 +58,14 @@ static lib_search_path_t *create_search_paths(char *first) {
 	}
 	
 	return paths;
+}
+
+static void free_search_paths(lib_search_path_t *paths) {
+	for (lib_search_path_t *path = paths, *next; path != NULL; path = next) {
+		next = path->next;																						// Set the next entry
+		free(path->path);																						// Free the path name
+		free(path);																								// And the path struct
+	}
 }
 
 static void add_search_path(lib_search_path_t *paths, char *path) {
@@ -124,6 +132,7 @@ int main(int argc, char **argv) {
 	
 	if (context == NULL) {
 		printf("Error: couldn't create the main context\n");													// ...
+		free_search_paths(paths);
 		return 1;
 	}
 	
@@ -140,16 +149,19 @@ int main(int argc, char **argv) {
 			printf("Supported formats: "); exec_list_all();
 			exec_help_all();
 			context_free(context);
+			free_search_paths(paths);
 			return 0;
 		} else if ((!strcmp(argv[i], "-v")) || (!strcmp(argv[i], "--version"))) {								// Version
 			printf("CHicago Operating System Project\n");
 			printf("CHicago Linker Version 1.0\n");
 			context_free(context);
+			free_search_paths(paths);
 			return 0;
 		} else if ((!strcmp(argv[i], "-o")) || (!strcmp(argv[i], "--output"))) {								// Set the output
 			if ((i + 1) >= argc) {
 				printf("Expected filename after '%s'\n", argv[i]);
 				context_free(context);
+				free_search_paths(paths);
 				return 1;
 			} else {
 				output = argv[++i];
@@ -158,6 +170,7 @@ int main(int argc, char **argv) {
 			if ((i + 1) >= argc) {
 				printf("Error: expected filename after '%s'\n", argv[i]);
 				context_free(context);
+				free_search_paths(paths);
 				return 1;
 			} else {
 				script = argv[++i];
@@ -166,6 +179,7 @@ int main(int argc, char **argv) {
 			if ((i + 1) >= argc) {
 				printf("Error: expected path after '%s'\n", argv[i]);
 				context_free(context);
+				free_search_paths(paths);
 				return 1;
 			} else {
 				add_search_path(paths, argv[++i]);
@@ -174,6 +188,7 @@ int main(int argc, char **argv) {
 			if ((i + 1) >= argc) {
 				printf("Error: expected library name after '%s'\n", argv[i]);
 				context_free(context);
+				free_search_paths(paths);
 				return 1;
 			} else {
 				char *fnam = argv[++i];
@@ -182,10 +197,12 @@ int main(int argc, char **argv) {
 				if (file == NULL) {
 					printf("Error: couldn't open '%s'\n", fnam);												// ...
 					context_free(context);
+					free_search_paths(paths);
 					return 1;
 				} else if (!exec_add_dep(context, fnam, file)) {												// Load it!
 					free(file);
 					context_free(context);
+					free_search_paths(paths);
 					return 1;
 				}
 				
@@ -203,6 +220,7 @@ int main(int argc, char **argv) {
 			if (file == NULL) {
 				printf("Error: couldn't open '%s'\n", argv[i]);													// ...
 				context_free(context);
+				free_search_paths(paths);
 				return 1;
 			}
 			
@@ -212,16 +230,19 @@ int main(int argc, char **argv) {
 				printf("Error: couldn't create the sub context\n");
 				free(file);
 				context_free(context);
+				free_search_paths(paths);
 				return 1;
 			} else if (!exec_load(context2, argv[i], file, format == NULL ? &format : NULL)) {					// Load it!
 				context_free(context2);																			// Failed...
 				free(file);
 				context_free(context);
+				free_search_paths(paths);
 				return 1;
 			} else if (!context_merge(context, context2)) {														// Merge the contexts
 				context_free(context2);																			// Failed...
 				free(file);
 				context_free(context);
+				free_search_paths(paths);
 				return 1;
 			}
 			
@@ -235,6 +256,7 @@ int main(int argc, char **argv) {
 	if (inputs == 0) {																							// We have at least one input file?
 		printf("Error: expected at least one input file\n");													// No...
 		context_free(context);
+		free_search_paths(paths);
 		return 1;
 	} else if (output == NULL) {																				// Set the output name?
 		output = "a.out";																						// Yeah
@@ -244,6 +266,7 @@ int main(int argc, char **argv) {
 		if (code == NULL) {
 			printf("Error: couldn't open '%s'\n", script);														// ...
 			context_free(context);
+			free_search_paths(paths);
 			return 1;
 		}
 		
@@ -251,6 +274,7 @@ int main(int argc, char **argv) {
 		
 		if (context2 == NULL) {
 			context_free(context);																				// Failed
+			free_search_paths(paths);
 			return 1;
 		} else {
 			context_free(context);
@@ -265,6 +289,7 @@ int main(int argc, char **argv) {
 	if (out == NULL) {
 		printf("Error: couldn't open the output file\n");														// Failed
 		context_free(context);
+		free_search_paths(paths);
 		return 1;
 	}
 	
@@ -272,6 +297,7 @@ int main(int argc, char **argv) {
 	
 	fclose(out);
 	context_free(context);
+	free_search_paths(paths);
 	
 	return !res;
 }

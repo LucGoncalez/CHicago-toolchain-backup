@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on January 14 of 2019, at 12:56 BRT
-// Last edited on January 14 of 2019, at 14:37 BRT
+// Last edited on February 24 of 2019, at 14:21 BRT
 
 #include <exec.h>
 #include <string.h>
@@ -14,7 +14,7 @@ static void bin_help(void) {
 }
 
 static int bin_option(int argc, char **argv, int i) {
-	if (argv == NULL || argv == NULL || i >= argc) {															// Sanity checks
+	if (argv == NULL || i >= argc) {																			// Sanity checks
 		return 0;
 	}
 	

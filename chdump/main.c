@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on January 28 of 2019, at 16:47 BRT
-// Last edited on February 20 of 2019, at 18:25 BRT
+// Last edited on February 24 of 2019, at 14:37 BRT
 
 #include <exec.h>
 #include <stdio.h>
@@ -82,10 +82,12 @@ int main(int argc, char **argv) {
 	
 	if (context == NULL) {
 		printf("Couldn't dump '%s'\n", input);																	// Failed
+		free(file);
 		return 1;
 	} else if (!exec_gen(context, file)) {																		// Let's gen!
 		printf("Couldn't dump '%s'\n", input);																	// Failed
 		context_free(context);
+		free(file);
 		return 1;
 	}
 	

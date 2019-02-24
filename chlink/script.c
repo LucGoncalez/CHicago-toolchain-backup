@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on February 18 of 2019, at 17:08 BRT
-// Last edited on February 20 of 2019, at 17:55 BRT
+// Last edited on February 24 of 2019, at 15:01 BRT
 
 #include <context.h>
 #include <inttypes.h>
@@ -181,6 +181,7 @@ static int parse_section(context_t *src, context_t *context, char *script, char 
 				}
 				
 				consume_spaces(&cur, line);																		// Consume whitespaces
+				free(sectn);																					// Free the 'sectn'
 			}
 			
 			if (!expect_char(cur, &cur, ')')) {																	// Yes, expect a '('
@@ -352,6 +353,8 @@ context_t *parse_script(context_t *src, char *script, char *code) {
 					} else {
 						context->entry = get_sect(src, sym->sect) + sym->loc;									// Found :)
 					}
+					
+					free(entry);																				// Free the 'entry' str
 				} else if (*cur >= '0' && *cur <= '9') {														// Address after the ENTRY directive?
 					context->entry = get_num(cur, &cur);														// Yes :)
 				} else {
