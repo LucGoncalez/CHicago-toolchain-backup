@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on February 11 of 2019, at 16:48 BRT
-// Last edited on February 24 of 2019, at 15:51 BRT
+// Last edited on February 24 of 2019, at 16:02 BRT
 
 #include <context.h>
 #include <stdio.h>
@@ -93,7 +93,10 @@ void context_add_section(context_t *context, char *name, uintptr_t size, uintptr
 	}
 	
 	if (cur == NULL) {
-		free(name);
+		if (fe) {
+			free(name);
+		}
+		
 		return;																									// Failed to alloc
 	}
 	
@@ -107,7 +110,10 @@ void context_add_section(context_t *context, char *name, uintptr_t size, uintptr
 		}
 		
 		free(cur);
-		free(name);
+		
+		if (fe) {
+			free(name);
+		}
 		
 		return;
 	}
@@ -122,7 +128,11 @@ void context_add_section(context_t *context, char *name, uintptr_t size, uintptr
 			
 			free(cur->name);
 			free(cur);
-			free(name);
+			
+			
+			if (fe) {
+				free(name);
+			}
 			
 			return;
 		}
