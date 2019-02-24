@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on February 16 of 2019, at 20:21 BRT
-// Last edited on February 24 of 2019, at 15:19 BRT
+// Last edited on February 24 of 2019, at 15:30 BRT
 
 #include <exec.h>
 #include <script.h>
@@ -121,7 +121,7 @@ int main(int argc, char **argv) {
 	char *output = NULL;
 	char *format = NULL;
 	char *script = NULL;
-	lib_search_path_t *paths = create_search_paths(SYSROOT_PATH("/Libraries"));									// Let's create the search path struct
+	lib_search_path_t *paths = create_search_paths(strdup(SYSROOT_PATH("/Libraries")));							// Let's create the search path struct
 	
 	if (paths == NULL) {
 		printf("Error: couldn't create the search path struct\n");												// ...
@@ -210,7 +210,9 @@ int main(int argc, char **argv) {
 			}
 		} else if ((temp = exec_option(format, argc, argv, i)) != 0) {											// Executable format-specific option?
 			if (temp == -1) {
-				return 1;																						// Failed...
+				context_free(context);																			// Failed...
+				free_search_paths(paths);
+				return 1;
 			} else if (temp != -2) {
 				i += temp;
 			}

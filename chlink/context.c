@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on February 11 of 2019, at 16:48 BRT
-// Last edited on February 24 of 2019, at 15:18 BRT
+// Last edited on February 24 of 2019, at 15:34 BRT
 
 #include <context.h>
 #include <stdio.h>
@@ -74,6 +74,7 @@ void context_add_section(context_t *context, char *name, uintptr_t size, uintptr
 				cur->size += size;																				// And set the new size
 			}
 			
+			free(name);
 			return;
 		} else if (cur->next == NULL) {																			// We need to create this section?
 			break;																								// Yes
@@ -89,6 +90,7 @@ void context_add_section(context_t *context, char *name, uintptr_t size, uintptr
 	}
 	
 	if (cur == NULL) {
+		free(name);
 		return;																									// Failed to alloc
 	}
 	
@@ -102,6 +104,7 @@ void context_add_section(context_t *context, char *name, uintptr_t size, uintptr
 		}
 		
 		free(cur);
+		free(name);
 		
 		return;
 	}
@@ -116,6 +119,7 @@ void context_add_section(context_t *context, char *name, uintptr_t size, uintptr
 			
 			free(cur->name);
 			free(cur);
+			free(name);
 			
 			return;
 		}
@@ -143,11 +147,18 @@ int context_add_symbol(context_t *context, char *name, char *sect, uint8_t type,
 				cur->type = CONTEXT_SYMBOL_GLOBAL;
 				cur->loc = loc;
 				
+				free(name);
+				free(sect);
+				
 				return 1;
 			} else if (cur->type == CONTEXT_SYMBOL_EXTERN || type == CONTEXT_SYMBOL_EXTERN) {
+				free(name);
+				free(sect);
 				return 1;
 			} else {
 				printf("Error: redefinition of '%s' at section '%s'\n", name, sect);							// Redefinition :(
+				free(name);
+				free(sect);
 				return 0;
 			}
 		} else if (cur->next == NULL) {																			// We need to create this section?
@@ -166,6 +177,8 @@ int context_add_symbol(context_t *context, char *name, char *sect, uint8_t type,
 	}
 	
 	if (cur == NULL) {
+		free(name);
+		free(sect);
 		return 0;																								// Failed to alloc
 	}
 	
@@ -187,6 +200,8 @@ int context_add_symbol(context_t *context, char *name, char *sect, uint8_t type,
 			free(cur->name);
 		}
 		
+		free(name);
+		free(sect);
 		free(cur);
 		
 		return 0;
@@ -218,18 +233,27 @@ void context_add_relocation(context_t *context, char *name, char *sect, uint8_t 
 	}
 	
 	if (cur == NULL) {
+		if (name != NULL) {
+			free(name);
+		}
+		
+		free(sect);
+		
 		return;																									// Failed to alloc
 	}
 	
-	cur->name = strdup(name);																					// Ok, set everything!
+	if (name != NULL) {																							// Ok, set everything!
+		cur->name = strdup(name);
+	}
+	
 	cur->sect = strdup(sect);
 	cur->size = size;
 	cur->loc = loc;
 	cur->increment = inc;
 	cur->relative = rel;
 	
-	if (cur->sect == NULL || cur->name == NULL) {
-		if (last != NULL) {																						// Failed to strdup the name (or sect)...
+	if (cur->sect == NULL || (name != NULL && cur->name == NULL)) {
+		if (last != NULL) {																						// Failed to strdup the sect (or name)...
 			last->next = NULL;
 		}
 		
@@ -241,6 +265,11 @@ void context_add_relocation(context_t *context, char *name, char *sect, uint8_t 
 			free(cur->name);
 		}
 		
+		if (name != NULL) {
+			free(name);
+		}
+		
+		free(sect);
 		free(cur);
 		
 		return;
@@ -260,6 +289,7 @@ void context_add_dep(context_t *context, char *name) {
 	
 	for (; cur != NULL; cur = cur->next) {
 		if ((strlen(name) == strlen(cur->name)) && !strcmp(name, cur->name)) {									// Found?
+			free(name);
 			return;
 		} else if (cur->next == NULL) {																			// We need to create this dep?
 			break;																								// Yes
@@ -274,6 +304,7 @@ void context_add_dep(context_t *context, char *name) {
 	}
 	
 	if (cur == NULL) {
+		free(name);
 		return;																									// Failed to alloc
 	}
 	
@@ -293,11 +324,13 @@ int context_add_dep_sym(context_t *context, char *dep, char *name) {
 	
 	for (; deps != NULL; deps = deps->next) {
 		if ((strlen(name) == strlen(deps->name)) && !strcmp(name, deps->name)) {								// Found?
+			free(name);
 			break;
 		}
 	}
 	
 	if (deps == NULL) {
+		free(name);
 		return 0;																								// Not found :(
 	}
 	
@@ -306,6 +339,7 @@ int context_add_dep_sym(context_t *context, char *dep, char *name) {
 	for (; cur != NULL; cur = cur->next) {
 		if ((strlen(name) == strlen(cur->name)) && !strcmp(name, cur->name)) {									// Found?
 			printf("Error: redefinition of '%s'\n", name);														// Redefinition :(
+			free(name);
 			return 0;
 		} else if (cur->next == NULL) {																			// We need to create this sym?
 			break;																								// Yes
@@ -320,6 +354,7 @@ int context_add_dep_sym(context_t *context, char *dep, char *name) {
 	}
 	
 	if (cur == NULL) {
+		free(name);
 		return 0;																								// Failed to alloc
 	}
 	

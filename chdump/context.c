@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on February 11 of 2019, at 16:48 BRT
-// Last edited on February 24 of 2019, at 14:48 BRT
+// Last edited on February 24 of 2019, at 15:36 BRT
 
 #include <context.h>
 #include <stdio.h>
@@ -51,6 +51,7 @@ void context_add_section(context_t *context, char *name, uintptr_t size, uintptr
 	
 	for (; cur != NULL; cur = cur->next) {
 		if ((strlen(name) == strlen(cur->name)) && !strcmp(name, cur->name)) {									// Found?
+			free(name);
 			return;																								// Yes, so it already exists
 		} else if (cur->next == NULL) {																			// We need to create this section?
 			break;																								// Yes
@@ -65,6 +66,7 @@ void context_add_section(context_t *context, char *name, uintptr_t size, uintptr
 	}
 	
 	if (cur == NULL) {
+		free(name);
 		return;																									// Failed to alloc
 	}
 	
@@ -88,6 +90,8 @@ void context_add_symbol(context_t *context, char *name, char *sect, uint8_t type
 	
 	for (; cur != NULL; cur = cur->next) {
 		if ((strlen(name) == strlen(cur->name)) && !strcmp(name, cur->name)) {									// Found?
+			free(sect);
+			free(name);
 			return;																								// Yes, so it already exists
 		} else if (cur->next == NULL) {																			// We need to create this section?
 			break;																								// Yes
@@ -104,6 +108,8 @@ void context_add_symbol(context_t *context, char *name, char *sect, uint8_t type
 	}
 	
 	if (cur == NULL) {
+		free(sect);
+		free(name);
 		return;																									// Failed to alloc
 	}
 	
@@ -134,6 +140,12 @@ void context_add_relocation(context_t *context, char *name, char *sect, uint8_t 
 	}
 	
 	if (cur == NULL) {
+		if (name != NULL) {
+			free(name);
+		}
+		
+		free(sect);
+		
 		return;																									// Failed to alloc
 	}
 	
