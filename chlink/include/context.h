@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on February 11 of 2019, at 16:38 BRT
-// Last edited on February 20 of 2019, at 18:03 BRT
+// Last edited on February 24 of 2019, at 15:50 BRT
 
 #ifndef __CONTEXT_H__
 #define __CONTEXT_H__
@@ -61,8 +61,8 @@ typedef struct {
 
 context_t *context_new();
 void context_free(context_t *context);
-void context_add_section(context_t *context, char *name, uintptr_t size, uintptr_t virt, uint8_t *data);
-int context_add_symbol(context_t *context, char *name, char *sect, uint8_t type, uintptr_t loc);
+void context_add_section(context_t *context, char *name, uintptr_t size, uintptr_t virt, uint8_t *data, int fe);
+int context_add_symbol(context_t *context, char *name, char *sect, uint8_t type, uintptr_t loc, int fe);
 void context_add_relocation(context_t *context, char *name, char *sect, uint8_t size, uintptr_t loc, int inc, int rel);
 void context_add_dep(context_t *context, char *name);
 int context_add_dep_sym(context_t *context, char *dep, char *name);

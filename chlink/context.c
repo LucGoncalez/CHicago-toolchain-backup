@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on February 11 of 2019, at 16:48 BRT
-// Last edited on February 24 of 2019, at 15:40 BRT
+// Last edited on February 24 of 2019, at 15:51 BRT
 
 #include <context.h>
 #include <stdio.h>
@@ -56,7 +56,7 @@ void context_free(context_t *context) {
 	}
 }
 
-void context_add_section(context_t *context, char *name, uintptr_t size, uintptr_t virt, uint8_t *data) {
+void context_add_section(context_t *context, char *name, uintptr_t size, uintptr_t virt, uint8_t *data, int fe) {
 	if (context == NULL || name == NULL || (size > 0 && data == NULL)) {										// Null pointer check
 		return;
 	}
@@ -74,7 +74,10 @@ void context_add_section(context_t *context, char *name, uintptr_t size, uintptr
 				cur->size += size;																				// And set the new size
 			}
 			
-			free(name);
+			if (fe) {
+				free(name);
+			}
+			
 			return;
 		} else if (cur->next == NULL) {																			// We need to create this section?
 			break;																								// Yes
@@ -132,7 +135,7 @@ void context_add_section(context_t *context, char *name, uintptr_t size, uintptr
 	}
 }
 
-int context_add_symbol(context_t *context, char *name, char *sect, uint8_t type, uintptr_t loc) {
+int context_add_symbol(context_t *context, char *name, char *sect, uint8_t type, uintptr_t loc, int fe) {
 	if (context == NULL || name == NULL || sect == NULL) {														// Null pointer check
 		return 0;
 	}
@@ -147,13 +150,18 @@ int context_add_symbol(context_t *context, char *name, char *sect, uint8_t type,
 				cur->type = CONTEXT_SYMBOL_GLOBAL;
 				cur->loc = loc;
 				
-				free(name);
-				free(sect);
+				if (fe) {
+					free(name);
+					free(sect);
+				}
 				
 				return 1;
 			} else if (cur->type == CONTEXT_SYMBOL_EXTERN || type == CONTEXT_SYMBOL_EXTERN) {
-				free(name);
-				free(sect);
+				if (fe) {
+					free(name);
+					free(sect);
+				}
+				
 				return 1;
 			} else {
 				printf("Error: redefinition of '%s' at section '%s'\n", name, sect);							// Redefinition :(
@@ -449,14 +457,14 @@ int context_merge(context_t *dst, context_t *src) {
 	for (context_symbol_t *sym = src->symbols; sym != NULL; sym = sym->next) {									// First, add the symbols
 		if (sym->type != CONTEXT_SYMBOL_LOCAL) {																// Local?
 			if (!context_add_symbol(dst, sym->name, sym->sect, sym->type,
-								    sym->loc + context_get_sect_loc(dst, src, sym->sect))) {					// Nope, add it
+								    sym->loc + context_get_sect_loc(dst, src, sym->sect), 0)) {					// Nope, add it
 				return 0;
 			}
 		}
 	}
 	
 	for (context_section_t *sect = src->sections; sect != NULL; sect = sect->next) {							// Now, add/merge the sections
-		context_add_section(dst, sect->name, sect->size, context_get_virt(dst, sect->name), sect->data);
+		context_add_section(dst, sect->name, sect->size, context_get_virt(dst, sect->name), sect->data, 0);
 	}
 	
 	for (context_reloc_t *rel = src->relocs; rel != NULL; rel = rel->next) {									// Now, add the relocations

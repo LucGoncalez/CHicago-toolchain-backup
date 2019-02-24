@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on February 18 of 2019, at 17:08 BRT
-// Last edited on February 24 of 2019, at 15:01 BRT
+// Last edited on February 24 of 2019, at 15:54 BRT
 
 #include <context.h>
 #include <inttypes.h>
@@ -96,7 +96,7 @@ static context_section_t *get_sect_real(context_t *context, char *name) {
 }
 
 static context_section_t *add_sect(context_t *context, char *name) {
-	context_add_section(context, name, 0, last_virt, NULL);														// Add the section
+	context_add_section(context, name, 0, last_virt, NULL, 0);													// Add the section
 	return get_sect_real(context, name);
 }
 
@@ -160,12 +160,12 @@ static int parse_section(context_t *src, context_t *context, char *script, char 
 				context_section_t *sect = get_sect_real(src, sectn);											// Get this section
 				
 				if (sect != NULL) {																				// Exists?
-					context_add_section(context, section->name, sect->size, last_virt, sect->data);				// Yes, append!
+					context_add_section(context, section->name, sect->size, last_virt, sect->data, 0);			// Yes, append!
 					
 					for (context_symbol_t *sym = src->symbols; sym != NULL; sym = sym->next) {					// Let's add all the symbols from this section
 						if ((strlen(sym->sect) == strlen(sectn)) && !strcmp(sym->sect, sectn)) {				// Same section?
 							context_add_symbol(context, sym->name, section->name, sym->type,
-											   sym->loc + (last_virt - section->virt));							// Yes, add it!
+											   sym->loc + (last_virt - section->virt), 0);						// Yes, add it!
 						}
 					}
 					

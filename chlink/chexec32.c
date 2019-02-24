@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on February 15 of 2019, at 15:09 BRT
-// Last edited on February 22 of 2019, at 21:43 BRT
+// Last edited on February 24 of 2019, at 15:51 BRT
 
 #include <chexec32.h>
 #include <exec.h>
@@ -89,7 +89,7 @@ static int chexec32_load(context_t *context, char *file) {
 			name[j] = (char)sect->name[j];
 		}
 		
-		context_add_section(context, name, sect->size, sect->virt, (uint8_t*)(file + sect->offset));					// Add the section
+		context_add_section(context, name, sect->size, sect->virt, (uint8_t*)(file + sect->offset), 1);					// Add the section
 		
 		incr += sect->name_len * sizeof(wchar_t);																		// Save the name length
 	}
@@ -113,7 +113,7 @@ static int chexec32_load(context_t *context, char *file) {
 		uintptr_t loc = 0;																								// Let's get the section of this symbol (and address of the symbol INSIDE the section)
 		char *sect = chexec32_get_sect(context, sym->virt, &loc);
 		
-		if (!context_add_symbol(context, name, sect, type, loc)) {														// Add the symbol
+		if (!context_add_symbol(context, name, sect, type, loc, 1)) {													// Add the symbol
 			return -1;																									// :(
 		}
 		
