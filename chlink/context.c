@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on February 11 of 2019, at 16:48 BRT
-// Last edited on February 24 of 2019, at 15:34 BRT
+// Last edited on February 24 of 2019, at 15:40 BRT
 
 #include <context.h>
 #include <stdio.h>
@@ -324,7 +324,6 @@ int context_add_dep_sym(context_t *context, char *dep, char *name) {
 	
 	for (; deps != NULL; deps = deps->next) {
 		if ((strlen(name) == strlen(deps->name)) && !strcmp(name, deps->name)) {								// Found?
-			free(name);
 			break;
 		}
 	}

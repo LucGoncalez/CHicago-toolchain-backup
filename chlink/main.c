@@ -1,7 +1,7 @@
 // File author is Ítalo Lima Marconato Matias
 //
 // Created on February 16 of 2019, at 20:21 BRT
-// Last edited on February 24 of 2019, at 15:30 BRT
+// Last edited on February 24 of 2019, at 15:41 BRT
 
 #include <exec.h>
 #include <script.h>
@@ -55,6 +55,8 @@ static lib_search_path_t *create_search_paths(char *first) {
 	
 	if (paths != NULL) {																						// Ok?
 		paths->path = first;																					// Yes, so set it!
+	} else {
+		free(first);																							// ...
 	}
 	
 	return paths;
